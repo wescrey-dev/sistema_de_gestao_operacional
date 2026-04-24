@@ -1,0 +1,38 @@
+{% extends 'base.html' %} {% block title %}Checklists{% endblock %} {% block
+page_title %}Modelos de checklist{% endblock %} {% block page_description
+%}Selecione um modelo para preencher o checklist digital.{% endblock %} {% block
+content %}
+<section class="record-grid">
+  {% for modelo in modelos %}
+  <article class="card record-card checklist-model-card">
+    <div class="record-header">
+      <div>
+        <span class="pill">Checklist</span>
+        <h3>{{ modelo.nome }}</h3>
+      </div>
+      <strong>{{ modelo.codigo or "Sem código" }}</strong>
+    </div>
+
+    <p>
+      <strong>Área padrão:</strong> {{ modelo.area_padrao or "Não informada" }}
+    </p>
+    <p><strong>Descrição:</strong> {{ modelo.descricao or "Sem descrição" }}</p>
+    <p>
+      <strong>Criado em:</strong> {{ modelo.criado_em.strftime("%d/%m/%Y
+      %H:%M:%S") }}
+    </p>
+
+    <div class="record-actions">
+      <a
+        class="button"
+        href="{{ url_for('checklist_preencher', modelo_id=modelo.id) }}"
+      >
+        Abrir checklist
+      </a>
+    </div>
+  </article>
+  {% else %}
+  <p class="muted">Nenhum modelo de checklist cadastrado.</p>
+  {% endfor %}
+</section>
+{% endblock %}

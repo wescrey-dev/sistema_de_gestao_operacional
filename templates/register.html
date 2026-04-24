@@ -1,0 +1,77 @@
+{% extends 'base.html' %} {% block title %}Cadastro{% endblock %} {% block
+content %}
+<section class="auth-shell">
+  <div class="auth-hero">
+    <span class="pill">Primeiro acesso</span>
+    <h1>Criar usuário</h1>
+    <p>
+      Cadastre um usuário para proteger o sistema, controlar o acesso aos
+      formulários e manter a operação mais segura e organizada.
+    </p>
+
+    <div class="auth-feature-list">
+      <div class="auth-feature">
+        <strong>Acesso protegido</strong>
+        <span>Somente usuários autorizados entram no sistema</span>
+      </div>
+      <div class="auth-feature">
+        <strong>Estrutura profissional</strong>
+        <span>Base pronta para equipes, relatórios e expansão</span>
+      </div>
+      <div class="auth-feature">
+        <strong>Primeiro usuário admin</strong>
+        <span>Gestão inicial simplificada para implantação</span>
+      </div>
+    </div>
+  </div>
+
+  <form method="POST" class="card auth-card">
+    <div class="auth-card-header">
+      <h2>Novo usuário</h2>
+      <p class="muted">O primeiro usuário criado vira administrador.</p>
+    </div>
+
+    <label>
+      Nome
+      <input type="text" name="nome" placeholder="Seu nome completo" required />
+    </label>
+
+    <label>
+      Email
+      <input
+        type="email"
+        name="email"
+        placeholder="seuemail@empresa.com"
+        required
+      />
+    </label>
+
+    <label>
+      Senha
+      <input
+        type="password"
+        name="senha"
+        placeholder="Crie uma senha"
+        required
+      />
+    </label>
+
+    <label>
+      Confirmar senha
+      <input
+        type="password"
+        name="confirmar_senha"
+        placeholder="Repita a senha"
+        required
+      />
+    </label>
+
+    <button class="button auth-button" type="submit">Criar usuário</button>
+
+    <p class="auth-switch">
+      Já tem conta?
+      <a href="{{ url_for('login') }}">Fazer login</a>
+    </p>
+  </form>
+</section>
+{% endblock %}

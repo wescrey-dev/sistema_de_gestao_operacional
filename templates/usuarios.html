@@ -1,0 +1,52 @@
+{% extends 'base.html' %} {% block title %}Usuários{% endblock %} {% block
+page_title %}Gestão de usuários{% endblock %} {% block page_description
+%}Controle de perfis e status de acesso do sistema.{% endblock %} {% block
+content %}
+<section class="record-grid">
+  {% for usuario in usuarios %}
+  <article class="card record-card">
+    <div class="record-header">
+      <div>
+        <strong>{{ usuario.nome }}</strong>
+        <p class="muted">{{ usuario.email }}</p>
+      </div>
+      <span class="pill">{{ usuario.perfil }}</span>
+    </div>
+
+    <p>
+      <strong>Status:</strong> {{ "Ativo" if usuario.ativo else "Inativo" }}
+    </p>
+    <p>
+      <strong>Criado em:</strong> {{ usuario.criado_em.strftime("%d/%m/%Y
+      %H:%M:%S") }}
+    </p>
+
+    <form
+      method="POST"
+      action="{{ url_for('alterar_perfil', usuario_id=usuario.id) }}"
+      class="user-form-block"
+    >
+      <label for="perfil-{{ usuario.id }}">Alterar perfil</label>
+      <div class="user-inline-actions">
+        <select name="perfil" id="perfil-{{ usuario.id }}">
+  <option value="admin" {{ 'selected' if usuario.perfil == 'admin' else '' }}>admin</option>
+<option value="supervisor" {{ 'selected' if usuario.perfil == 'supervisor' else '' }}>supervisor</option>
+<option value="usuario" {{ 'selected' if usuario.perfil == 'usuario' else '' }}>usuario</option>
+</select>
+        <button class="button button-secondary" type="submit">Salvar</button>
+      </div>
+    </form>
+
+    <form
+      method="POST"
+      action="{{ url_for('toggle_usuario', usuario_id=usuario.id) }}"
+      class="user-form-block"
+    >
+      <button class="button" type="submit">
+        {% if usuario.ativo %}Desativar{% else %}Ativar{% endif %}
+      </button>
+    </form>
+  </article>
+  {% endfor %}
+</section>
+{% endblock %}

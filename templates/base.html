@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}Segurança Operacional{% endblock %}</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/tom-select/dist/css/tom-select.css"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='style.css') }}"
+    />
+  </head>
+  <body class="light-theme auth-aware {% if usuario_logado %}has-sidebar{% else %}no-sidebar{% endif %}"></body>
+    {% if usuario_logado %}
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-badge">SO</div>
+        <div>
+          <h1>Segurança Operacional</h1>
+          <p>OPAI · AP · IPS</p>
+        </div>
+      </div>
+
+      <nav class="nav">
+        {% if session.get("usuario_perfil") in ["admin", "supervisor"] %}
+        <a href="{{ url_for('index') }}" class="nav-link">Dashboard</a>
+        {% endif %}
+        <a href="{{ url_for('opai') }}" class="nav-link">Nova OPAI</a>
+        <a href="{{ url_for('ap') }}" class="nav-link">Novo AP</a>
+        <a href="{{ url_for('ips') }}" class="nav-link">Nova IPS</a>
+        <a href="{{ url_for('checklist_modelos') }}" class="nav-link">Checklists</a>
+        <a href="{{ url_for('registros') }}" class="nav-link">Registros</a>
+
+        {% if session.get("usuario_perfil") == "admin" %}
+        <a href="{{ url_for('usuarios') }}" class="nav-link">Usuários</a>
+        {% endif %}
+
+        <a href="{{ url_for('logout') }}" class="nav-link danger-link">Sair</a>
+      </nav>
+
+      <div class="sidebar-card">
+        <strong>Usuário logado</strong>
+        <p>{{ usuario_nome }}</p>
+      </div>
+    </aside>
+    {% endif %}
+
+    <main class="content {% if not usuario_logado %}auth-content{% endif %}">
+      {% if usuario_logado %}
+      <header class="topbar">
+        <div>
+          <h2>{% block page_title %}{% endblock %}</h2>
+          <p class="muted">{% block page_description %}{% endblock %}</p>
+        </div>
+
+        <div class="top-actions">
+          <button
+            class="button button-secondary"
+            type="button"
+            id="theme-toggle"
+          >
+            Alternar tema
+          </button>
+          <a class="button button-secondary" href="{{ url_for('registros') }}"
+            >Ver registros</a
+          >
+        </div>
+      </header>
+      {% endif %} {% with messages = get_flashed_messages(with_categories=true)
+      %} {% if messages %} {% for category, message in messages %}
+      <div class="alert alert-{{ category }}">{{ message }}</div>
+      {% endfor %} {% endif %} {% endwith %} {% block content %}{% endblock %}
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        const savedTheme = localStorage.getItem("so-theme");
+
+        if (savedTheme === "dark") {
+          document.body.classList.remove("light-theme");
+          document.body.classList.add("dark-theme");
+        } else {
+          document.body.classList.remove("dark-theme");
+          document.body.classList.add("light-theme");
+        }
+
+        const toggle = document.getElementById("theme-toggle");
+        if (toggle) {
+          toggle.addEventListener("click", function () {
+            document.body.classList.toggle("dark-theme");
+            document.body.classList.toggle("light-theme");
+
+            localStorage.setItem(
+              "so-theme",
+              document.body.classList.contains("dark-theme") ? "dark" : "light",
+            );
+          });
+        }
+
+        document.querySelectorAll("select").forEach(function (el) {
+          new TomSelect(el, {
+            create: false,
+            allowEmptyOption: true,
+            maxOptions: 200,
+            dropdownParent: "body",
+            render: {
+              no_results: function () {
+                return '<div class="no-results">Nenhum resultado encontrado</div>';
+              },
+            },
+          });
+        });
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,208 @@
+{% extends 'base.html' %} {% block title %}Preencher Checklist{% endblock %} {%
+block page_title %}{{ modelo.nome }}{% endblock %} {% block page_description
+%}Modelo digital para execução do checklist.{% endblock %} {% block content %}
+<form class="checklist-form-layout">
+  <section class="card checklist-header-card">
+    <div class="detail-header">
+      <div>
+        <span class="pill">Checklist digital</span>
+        <h3>{{ modelo.nome }}</h3>
+      </div>
+      <a
+        class="button button-secondary"
+        href="{{ url_for('checklist_modelos') }}"
+        >Voltar</a
+      >
+    </div>
+
+    <div class="checklist-meta">
+      <p><strong>Código:</strong> {{ modelo.codigo or "Sem código" }}</p>
+      <p>
+        <strong>Área padrão:</strong> {{ modelo.area_padrao or "Não informada"
+        }}
+      </p>
+      <p>
+        <strong>Descrição:</strong> {{ modelo.descricao or "Sem descrição" }}
+      </p>
+    </div>
+
+    <div class="checklist-header-grid">
+      {% for campo in campos_cabecalho %}
+      <label>
+        {{ campo.label_campo }} {% if campo.tipo_campo == "data" %}
+        <input
+          type="date"
+          name="{{ campo.nome_campo }}"
+          {%
+          if
+          campo.obrigatorio
+          %}required{%
+          endif
+          %}
+        />
+        {% elif campo.tipo_campo == "hora" %}
+        <input
+          type="time"
+          name="{{ campo.nome_campo }}"
+          {%
+          if
+          campo.obrigatorio
+          %}required{%
+          endif
+          %}
+        />
+        {% elif campo.tipo_campo == "texto_longo" %}
+        <textarea
+          name="{{ campo.nome_campo }}"
+          rows="3"
+          {%
+          if
+          campo.obrigatorio
+          %}required{%
+          endif
+          %}
+        ></textarea>
+        {% else %}
+        <input
+          type="text"
+          name="{{ campo.nome_campo }}"
+          {%
+          if
+          campo.obrigatorio
+          %}required{%
+          endif
+          %}
+        />
+        {% endif %}
+      </label>
+      {% endfor %}
+    </div>
+  </section>
+
+  {% for secao in secoes %}
+  <section class="card checklist-section-card">
+    <div class="section-title-row">
+      <h3>{{ secao.titulo }}</h3>
+      <span class="pill">{{ secao.tipo_secao }}</span>
+    </div>
+
+    {% if secao.tipo_secao == "observacoes_gerais" %}
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th>Chamado</th>
+            <th>Descrição do problema</th>
+            <th>Resolvido</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in secao.itens|sort(attribute='ordem') %}
+          <tr>
+            <td>{{ item.numero_item or "-" }}</td>
+            <td><input type="text" name="item_{{ item.id }}_chamado" /></td>
+            <td>
+              <textarea
+                name="item_{{ item.id }}_descricao_problema"
+                rows="2"
+              ></textarea>
+            </td>
+            <td>
+              <select name="item_{{ item.id }}_resolvido">
+                <option value=""></option>
+                <option value="Sim">Sim</option>
+                <option value="Não">Não</option>
+              </select>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th>Descrição</th>
+            <th>Normal</th>
+            <th>Anormal</th>
+            <th>R</th>
+            <th>S</th>
+            <th>T</th>
+            <th>Observação</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in secao.itens|sort(attribute='ordem') %}
+          <tr>
+            <td>{{ item.numero_item or "-" }}</td>
+            <td>{{ item.descricao }}</td>
+
+            <td>
+              {% if item.usa_normal_anormal %}
+              <input
+                type="radio"
+                name="item_{{ item.id }}_status"
+                value="Normal"
+              />
+              {% else %} - {% endif %}
+            </td>
+
+            <td>
+              {% if item.usa_normal_anormal %}
+              <input
+                type="radio"
+                name="item_{{ item.id }}_status"
+                value="Anormal"
+              />
+              {% else %} - {% endif %}
+            </td>
+
+            <td>
+              {% if item.usa_valores_rst %}
+              <input type="text" name="item_{{ item.id }}_r" />
+              {% else %} - {% endif %}
+            </td>
+
+            <td>
+              {% if item.usa_valores_rst %}
+              <input type="text" name="item_{{ item.id }}_s" />
+              {% else %} - {% endif %}
+            </td>
+
+            <td>
+              {% if item.usa_valores_rst %}
+              <input type="text" name="item_{{ item.id }}_t" />
+              {% else %} - {% endif %}
+            </td>
+
+            <td>
+              {% if item.usa_observacao %}
+              <textarea
+                name="item_{{ item.id }}_observacao"
+                rows="2"
+              ></textarea>
+              {% else %}
+              <textarea
+                name="item_{{ item.id }}_observacao"
+                rows="2"
+              ></textarea>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+  </section>
+  {% endfor %}
+
+  <section class="form-actions">
+    <button type="button" class="button">Salvar checklist</button>
+  </section>
+</form>
+{% endblock %}

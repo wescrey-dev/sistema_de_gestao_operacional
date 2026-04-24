@@ -1,0 +1,62 @@
+{% extends 'base.html' %} {% block title %}Login{% endblock %} {% block content
+%}
+<section class="auth-shell">
+  <div class="auth-hero">
+    <span class="pill">Acesso seguro</span>
+    <h1>Entrar no sistema</h1>
+    <p>
+      Acesse o painel de Segurança Operacional para registrar OPAI, AP e IPS,
+      acompanhar desvios e manter o controle centralizado das inspeções.
+    </p>
+
+    <div class="auth-feature-list">
+      <div class="auth-feature">
+        <strong>Controle centralizado</strong>
+        <span>Todos os registros em um único ambiente</span>
+      </div>
+      <div class="auth-feature">
+        <strong>Base MySQL</strong>
+        <span>Dados estruturados para crescimento do sistema</span>
+      </div>
+      <div class="auth-feature">
+        <strong>Pronto para mobile</strong>
+        <span>Layout moderno e preparado para evolução</span>
+      </div>
+    </div>
+  </div>
+
+  <form method="POST" class="card auth-card">
+    <div class="auth-card-header">
+      <h2>Bem-vindo de volta</h2>
+      <p class="muted">Use seu email e senha para continuar.</p>
+    </div>
+
+    <label>
+      Email
+      <input
+        type="email"
+        name="email"
+        placeholder="seuemail@empresa.com"
+        required
+      />
+    </label>
+
+    <label>
+      Senha
+      <input
+        type="password"
+        name="senha"
+        placeholder="Digite sua senha"
+        required
+      />
+    </label>
+
+    <button class="button auth-button" type="submit">Entrar no sistema</button>
+
+    <p class="auth-switch">
+      Ainda não tem conta?
+      <a href="{{ url_for('register') }}">Criar usuário</a>
+    </p>
+  </form>
+</section>
+{% endblock %}

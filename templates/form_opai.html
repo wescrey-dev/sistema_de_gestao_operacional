@@ -1,0 +1,105 @@
+{% extends 'base.html' %}{% block title %}Nova OPAI{% endblock %}{% block
+page_title %}OPAI · Auditoria comportamental{% endblock %}{% block
+page_description %}Cadastro da auditoria com desvios observados e ação
+corretiva.{% endblock %}{% block content %}
+<form method="POST" class="card form-shell">
+  <section class="form-section">
+    <h3>Identificação</h3>
+    <div class="form-grid">
+      <label
+        >Local observado<input
+          type="text"
+          name="local_observado"
+          required /></label
+      ><label>Data<input type="date" name="data" required /></label
+      ><label>Nome da UT<input type="text" name="nome_ut" /></label
+      ><label>Nº da UT<input type="text" name="numero_ut" /></label
+      ><label>Auditor<input type="text" name="auditor" required /></label
+      ><label>RE<input type="text" name="re" /></label
+      ><label
+        >Funcionario observado<input
+          type="text"
+          name="equipe_observada" /></label
+      ><label
+        >Nº de pessoas<input
+          type="number"
+          min="0"
+          name="numero_pessoas" /></label
+      ><label
+        >Status da OPAI<select name="status_opai">
+          <option>OPAI com desvios</option>
+          <option>OPAI sem desvios</option>
+        </select></label
+      >
+    </div>
+  </section>
+  <section class="form-section">
+    <h3>Comportamentos seguros / atitudes positivas</h3>
+    <label>
+      <textarea name="comportamentos_positivos" rows="4"></textarea>
+    </label>
+  </section>
+  <section class="form-section">
+    <h3>Desvios observados</h3>
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Nº Seq.</th>
+            <th>Descrição</th>
+            <th>Categoria</th>
+            <th>Sub-classe</th>
+            <th>Classe</th>
+            <th>Criticidade</th>
+            <th>Ação imediata</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for i in range(1,6) %}
+          <tr>
+            <td><input type="text" name="desvio_seq[]" value="{{ i }}" /></td>
+            <td><textarea name="desvio_descricao[]" rows="2"></textarea></td>
+            <td>
+              <select name="desvio_categoria[]">
+                <option value=""></option>
+                {% for item in categorias %}
+                <option>{{ item }}</option>
+                {% endfor %}
+              </select>
+            </td>
+            <td>
+              <select name="desvio_subclasse[]">
+                <option value=""></option>
+                {% for item in subclasses %}
+                <option>{{ item }}</option>
+                {% endfor %}
+              </select>
+            </td>
+            <td>
+              <select name="desvio_classe[]">
+                <option value=""></option>
+                {% for item in classes %}
+                <option>{{ item }}</option>
+                {% endfor %}
+              </select>
+            </td>
+            <td>
+              <select name="desvio_criticidade[]">
+                <option value=""></option>
+                {% for item in criticidades %}
+                <option>{{ item }}</option>
+                {% endfor %}
+              </select>
+            </td>
+            <td><input type="text" name="desvio_acao[]" /></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+  <div class="form-actions">
+    <button class="button" type="submit">Salvar OPAI</button>
+  </div>
+</form>
+{% endblock %}

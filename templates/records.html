@@ -1,0 +1,225 @@
+{% extends 'base.html' %} {% block title %}Registros{% endblock %} {% block
+page_title %}Histórico de registros{% endblock %} {% block page_description
+%}Consulta consolidada dos formulários salvos no sistema.{% endblock %} {% block
+content %}
+<section class="records-toolbar card">
+  <div class="records-toolbar-grid">
+    <div>
+      <strong>Total OPAI</strong>
+      <p class="muted">{{ opais|length }}</p>
+    </div>
+    <div>
+      <strong>Total AP</strong>
+      <p class="muted">{{ aps|length }}</p>
+    </div>
+    <div>
+      <strong>Total IPS</strong>
+      <p class="muted">{{ ips_list|length }}</p>
+    </div>
+  </div>
+</section>
+
+<section class="card filters-card">
+  <form method="GET" class="filters-form">
+    <div class="filters-grid">
+      <label>
+        Busca
+        <input
+          type="text"
+          name="busca"
+          value="{{ filtros.busca }}"
+          placeholder="Local, auditor, tag, UT, emitido por..."
+        >
+      </label>
+
+      <label>
+        Tipo
+        <select name="tipo">
+          <option value="" {{ 'selected' if filtros.tipo == '' else '' }}>Todos</option>
+          <option value="opai" {{ 'selected' if filtros.tipo == 'opai' else '' }}>OPAI</option>
+          <option value="ap" {{ 'selected' if filtros.tipo == 'ap' else '' }}>AP</option>
+          <option value="ips" {{ 'selected' if filtros.tipo == 'ips' else '' }}>IPS</option>
+        </select>
+      </label>
+
+      <label>
+        Criticidade
+        <select name="criticidade">
+          <option value="" {{ 'selected' if filtros.criticidade == '' else '' }}>Todas</option>
+          <option value="Crítico" {{ 'selected' if filtros.criticidade == 'Crítico' else '' }}>Crítico</option>
+          <option value="Moderado" {{ 'selected' if filtros.criticidade == 'Moderado' else '' }}>Moderado</option>
+          <option value="Desprezível" {{ 'selected' if filtros.criticidade == 'Desprezível' else '' }}>Desprezível</option>
+          <option value="Leve" {{ 'selected' if filtros.criticidade == 'Leve' else '' }}>Leve</option>
+          <option value="Não aplicável" {{ 'selected' if filtros.criticidade == 'Não aplicável' else '' }}>Não aplicável</option>
+        </select>
+      </label>
+
+      <label>
+        Usuário criador
+        <select name="usuario_id">
+          <option value="" {{ 'selected' if filtros.usuario_id == '' else '' }}>Todos</option>
+          {% for usuario in lista_usuarios %}
+          <option value="{{ usuario.id }}" {{ 'selected' if filtros.usuario_id == (usuario.id|string) else '' }}>
+            {{ usuario.nome }}
+          </option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <label>
+        Data inicial
+        <input type="date" name="data_inicio" value="{{ filtros.data_inicio }}">
+      </label>
+
+      <label>
+        Data final
+        <input type="date" name="data_fim" value="{{ filtros.data_fim }}">
+      </label>
+    </div>
+
+    <div class="filters-actions">
+      <button class="button" type="submit">Aplicar filtros</button>
+      <a class="button button-secondary" href="{{ url_for('registros') }}">Limpar</a>
+    </div>
+  </form>
+</section>
+
+<section class="records-section">
+  <h3 class="section-title">OPAI</h3>
+  <div class="record-grid">
+    {% for registro in opais %}
+    <article class="card record-card">
+      <div class="record-header">
+        <span class="pill">OPAI</span>
+        <strong>#{{ registro.id }}</strong>
+      </div>
+
+      <p class="muted">
+        Criado em {{ registro.criado_em.strftime("%d/%m/%Y %H:%M:%S") }}
+      </p>
+
+      <div class="record-details">
+        <p><strong>Local:</strong> {{ registro.local_observado }}</p>
+        <p><strong>Auditor:</strong> {{ registro.auditor }}</p>
+        <p>
+          <strong>Equipe:</strong> {{ registro.equipe_observada or "Não
+          informada" }}
+        </p>
+        <p>
+          <strong>Status:</strong> {{ registro.status_opai or "Não informado" }}
+        </p>
+        <p>
+          <strong>Nº pessoas:</strong> {{ registro.numero_pessoas if
+          registro.numero_pessoas is not none else "Não informado" }}
+        </p>
+        <p><strong>Qtd. desvios:</strong> {{ registro.desvios|length }}</p>
+        <p><strong>Criticidade:</strong> {{ criticidade_opai(registro) }}</p>
+        <p>
+          <strong>Criado por:</strong> {{ registro.usuario.nome if
+          registro.usuario else "Não informado" }}
+        </p>
+      </div>
+
+      {% if registro.comportamentos_positivos %}
+      <div class="record-note">
+        <strong>Comportamentos positivos</strong>
+        <p>{{ registro.comportamentos_positivos }}</p>
+      </div>
+      {% endif %}
+    </article>
+    {% else %}
+    <p class="muted">Nenhum registro OPAI encontrado.</p>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="records-section">
+  <h3 class="section-title">AP</h3>
+  <div class="record-grid">
+    {% for registro in aps %}
+    <article class="card record-card">
+      <div class="record-header">
+        <span class="pill">AP</span>
+        <strong>#{{ registro.id }}</strong>
+      </div>
+
+      <p class="muted">
+        Criado em {{ registro.criado_em.strftime("%d/%m/%Y %H:%M:%S") }}
+      </p>
+
+      <div class="record-details">
+        <p><strong>UT:</strong> {{ registro.numero_nome_ut }}</p>
+        <p><strong>Emitido por:</strong> {{ registro.emitido_por }}</p>
+        <p>
+          <strong>Recebido por:</strong> {{ registro.recebido_por or "Não
+          informado" }}
+        </p>
+        <p><strong>Criticidade:</strong> {{ registro.criticidade }}</p>
+        <p>
+          <strong>Desvio tratado:</strong> {{ registro.desvio_tratado or "Não
+          informado" }}
+        </p>
+        <p><strong>Qtd. itens:</strong> {{ registro.itens|length }}</p>
+        <p>
+          <strong>Criado por:</strong> {{ registro.usuario.nome if
+          registro.usuario else "Não informado" }}
+        </p>
+      </div>
+
+      {% if registro.descricao_local %}
+      <div class="record-note">
+        <strong>Descrição do local</strong>
+        <p>{{ registro.descricao_local }}</p>
+      </div>
+      {% endif %}
+    </article>
+    {% else %}
+    <p class="muted">Nenhum registro AP encontrado.</p>
+    {% endfor %}
+  </div>
+</section>
+
+<section class="records-section">
+  <h3 class="section-title">IPS</h3>
+  <div class="record-grid">
+    {% for registro in ips_list %}
+    <article class="card record-card">
+      <div class="record-header">
+        <span class="pill">IPS</span>
+        <strong>#{{ registro.id }}</strong>
+      </div>
+
+      <p class="muted">
+        Criado em {{ registro.criado_em.strftime("%d/%m/%Y %H:%M:%S") }}
+      </p>
+
+      <div class="record-details">
+        <p><strong>TAG:</strong> {{ registro.identificacao_tag }}</p>
+        <p><strong>Inspetor:</strong> {{ registro.inspetor }}</p>
+        <p><strong>Função:</strong> {{ registro.funcao or "Não informada" }}</p>
+        <p><strong>Qtd. desvios:</strong> {{ registro.quantidade_desvios }}</p>
+        <p>
+          <strong>Ações propostas:</strong> {{
+          registro.quantidade_acoes_propostas }}
+        </p>
+        <p>
+          <strong>Ações concluídas:</strong> {{
+          registro.quantidade_acoes_concluidas }}
+        </p>
+        <p>
+          <strong>Pendentes:</strong> {{ registro.quantidade_acoes_propostas -
+          registro.quantidade_acoes_concluidas }}
+        </p>
+        <p><strong>Criticidade:</strong> {{ criticidade_ips(registro) }}</p>
+        <p>
+          <strong>Criado por:</strong> {{ registro.usuario.nome if
+          registro.usuario else "Não informado" }}
+        </p>
+      </div>
+    </article>
+    {% else %}
+    <p class="muted">Nenhum registro IPS encontrado.</p>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

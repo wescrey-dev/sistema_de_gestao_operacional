@@ -12,13 +12,21 @@ import os
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "seguranca-secret-key")
 
-DB_USER = os.getenv("MYSQL_USER", "root")
-DB_PASSWORD = quote_plus(os.getenv("MYSQL_PASSWORD", "SUA_SENHA_AQUI"))
-DB_HOST = os.getenv("MYSQL_HOST", "localhost")
-DB_PORT = os.getenv("MYSQL_PORT", "3306")
-DB_NAME = os.getenv("MYSQL_DB", "sistema_seguranca")
+DB_MODE = os.getenv("DB_MODE", "mysql").lower()
 
-app.config["SQLALCHEMY_DATABASE_URI"] = f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+if DB_MODE == "sqlite":
+    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///banco_local.db"
+else:
+    DB_USER = os.getenv("MYSQL_USER", "root")
+    DB_PASSWORD = quote_plus(os.getenv("MYSQL_PASSWORD", "SUA_SENHA_AQUI"))
+    DB_HOST = os.getenv("MYSQL_HOST", "localhost")
+    DB_PORT = os.getenv("MYSQL_PORT", "3306")
+    DB_NAME = os.getenv("MYSQL_DB", "sistema_seguranca")
+
+    app.config["SQLALCHEMY_DATABASE_URI"] = (
+        f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+    )
+
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db = SQLAlchemy(app)
 

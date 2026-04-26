@@ -229,6 +229,10 @@ def perfil_required(*perfis):
         return decorated
     return decorator
 
+@app.route("/teste-login")
+def teste_login():
+    return render_template("login.html")
+
 @app.context_processor
 def inject_globals():
     return {"usuario_logado": "usuario_id" in session, "usuario_nome": session.get("usuario_nome")}

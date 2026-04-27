@@ -120,6 +120,24 @@ content %}
         </p>
       </div>
 
+     <div class="record-note">
+  <strong>Sub-classes da OPAI</strong>
+  <p>
+    {% set subclasses = [] %}
+    {% for desvio in registro.desvios %}
+      {% if desvio.subclasse and desvio.subclasse not in subclasses %}
+        {% set _ = subclasses.append(desvio.subclasse) %}
+      {% endif %}
+    {% endfor %}
+
+    {% if subclasses %}
+      {{ subclasses | join(", ") }}
+    {% else %}
+      Não informadas.
+    {% endif %}
+  </p>
+</div>
+
       {% if registro.comportamentos_positivos %}
       <div class="record-note">
         <strong>Comportamentos positivos</strong>

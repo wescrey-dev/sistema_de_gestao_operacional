@@ -825,3 +825,235 @@ textarea {
     grid-template-columns: 1fr;
   }
 }
+
+/* =========================
+   MOBILE FIRST AJUSTES
+========================= */
+
+@media (max-width: 900px) {
+  body.has-sidebar,
+  body.no-sidebar {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    padding: 16px;
+    border-right: none;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .brand {
+    margin-bottom: 16px;
+  }
+
+  .nav {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .nav-link {
+    padding: 12px;
+    text-align: center;
+    font-size: 0.92rem;
+  }
+
+  .sidebar-card {
+    margin-top: 16px;
+  }
+
+  .content {
+    padding: 16px;
+  }
+
+  .topbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+  }
+
+  .top-actions {
+    width: 100%;
+  }
+
+  .top-actions .button,
+  .top-actions .button-secondary {
+    flex: 1;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .grid-two {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-card {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 20px;
+  }
+
+  .cta-group {
+    width: 100%;
+  }
+
+  .cta-group .button,
+  .cta-group .button-secondary {
+    flex: 1;
+  }
+
+  .form-grid,
+  .check-grid,
+  .filters-grid,
+  .checklist-header-grid,
+  .checklist-meta,
+  .detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .records-toolbar-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .record-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .record-card,
+  .detail-card,
+  .checklist-header-card,
+  .checklist-section-card,
+  .form-shell {
+    padding: 16px;
+  }
+
+  .record-header,
+  .detail-header,
+  .section-title-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .filters-actions,
+  .record-actions,
+  .form-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filters-actions .button,
+  .filters-actions .button-secondary,
+  .record-actions .button,
+  .record-actions .button-secondary,
+  .form-actions .button {
+    width: 100%;
+  }
+
+  .table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .data-table {
+    min-width: 780px;
+  }
+
+  .auth-content {
+    padding: 16px;
+  }
+
+  .auth-shell {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .auth-hero,
+  .auth-card {
+    padding: 20px;
+  }
+
+  .auth-hero h1 {
+    font-size: 1.9rem;
+  }
+
+  .user-inline-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+/* =========================
+   CHECKLIST MOBILE
+========================= */
+
+@media (max-width: 700px) {
+  .checklist-section-card .table-wrap {
+    overflow: visible;
+    border: none;
+  }
+
+  .checklist-section-card .data-table,
+  .checklist-section-card .data-table thead,
+  .checklist-section-card .data-table tbody,
+  .checklist-section-card .data-table tr,
+  .checklist-section-card .data-table th,
+  .checklist-section-card .data-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .checklist-section-card .data-table {
+    min-width: 100%;
+    border-collapse: separate;
+  }
+
+  .checklist-section-card .data-table thead {
+    display: none;
+  }
+
+  .checklist-section-card .data-table tr {
+    background: var(--panel-soft);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 14px;
+    margin-bottom: 14px;
+  }
+
+  .checklist-section-card .data-table td {
+    border: none;
+    padding: 8px 0;
+  }
+
+  .checklist-section-card .data-table td::before {
+    content: attr(data-label);
+    display: block;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+
+  .checklist-section-card input[type="radio"] {
+    width: 20px;
+    height: 20px;
+  }
+
+  .checklist-section-card textarea,
+  .checklist-section-card input,
+  .checklist-section-card select {
+    font-size: 16px;
+  }
+}
+
+/* botão para toque */
+
+@media (max-width: 700px) {
+  .button,
+  .button-secondary,
+  .nav-link,
+  select,
+  input,
+  textarea {
+    min-height: 44px;
+  }
+}

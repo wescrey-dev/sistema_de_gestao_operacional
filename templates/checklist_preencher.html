@@ -91,29 +91,67 @@ block page_title %}{{ modelo.nome }}{% endblock %} {% block page_description
       <table class="data-table">
         <thead>
           <tr>
-            <th>Item</th>
-            <th>Chamado</th>
-            <th>Descrição do problema</th>
-            <th>Resolvido</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for item in secao.itens|sort(attribute='ordem') %}
-          <tr>
-            <td>{{ item.numero_item or "-" }}</td>
-            <td><input type="text" name="item_{{ item.id }}_chamado" /></td>
-            <td>
+  <td data-label="Item">{{ item.numero_item or "-" }}</td>
+  <td data-label="Chamado">
+    <input type="text" name="item_{{ item.id }}_chamado">
+  </td>
+  <td data-label="Descrição do problema">
+    <textarea name="item_{{ item.id }}_descricao_problema" rows="2"></textarea>
+  </td>
+  <td data-label="Resolvido">
+    <select name="item_{{ item.id }}_resolvido">
+      <option value=""></option>
+      <option value="Sim">Sim</option>
+      <option value="Não">Não</option>
+    </select>
+  </td>
+</tr>
+            <td data-label="Item">{{ item.numero_item or "-" }}</td>
+            <td data-label="Descrição">{{ item.descricao }}</td>
+
+            <td data-label="Normal">
+              {% if item.usa_normal_anormal %}
+              <input
+                type="radio"
+                name="item_{{ item.id }}_status"
+                value="Normal"
+              />
+              {% else %} - {% endif %}
+            </td>
+
+            <td data-label="Anormal">
+              {% if item.usa_normal_anormal %}
+              <input
+                type="radio"
+                name="item_{{ item.id }}_status"
+                value="Anormal"
+              />
+              {% else %} - {% endif %}
+            </td>
+
+            <td data-label="R">
+              {% if item.usa_valores_rst %}
+              <input type="text" name="item_{{ item.id }}_r" />
+              {% else %} - {% endif %}
+            </td>
+
+            <td data-label="S">
+              {% if item.usa_valores_rst %}
+              <input type="text" name="item_{{ item.id }}_s" />
+              {% else %} - {% endif %}
+            </td>
+
+            <td data-label="T">
+              {% if item.usa_valores_rst %}
+              <input type="text" name="item_{{ item.id }}_t" />
+              {% else %} - {% endif %}
+            </td>
+
+            <td data-label="Observação">
               <textarea
-                name="item_{{ item.id }}_descricao_problema"
+                name="item_{{ item.id }}_observacao"
                 rows="2"
               ></textarea>
-            </td>
-            <td>
-              <select name="item_{{ item.id }}_resolvido">
-                <option value=""></option>
-                <option value="Sim">Sim</option>
-                <option value="Não">Não</option>
-              </select>
             </td>
           </tr>
           {% endfor %}

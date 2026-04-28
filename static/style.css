@@ -846,9 +846,16 @@ textarea {
     margin-bottom: 16px;
   }
 
-  .nav {
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
+  @media (max-width: 700px) {
+    .nav {
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+
+    .nav-link {
+      text-align: left;
+      padding: 12px 14px;
+    }
   }
 
   .nav-link {
@@ -1218,4 +1225,241 @@ textarea {
   .auth-feature-list {
     display: none;
   }
+}
+
+/* =========================
+   REGISTROS MOBILE
+========================= */
+
+@media (max-width: 700px) {
+  .records-toolbar {
+    padding: 14px;
+    margin-bottom: 14px;
+  }
+
+  .filters-card {
+    padding: 14px;
+    margin-bottom: 16px;
+  }
+
+  .filters-form {
+    gap: 12px;
+  }
+
+  .filters-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .record-card {
+    padding: 14px;
+    border-radius: 16px;
+  }
+
+  .record-header {
+    gap: 8px;
+  }
+
+  .record-header strong {
+    font-size: 1rem;
+  }
+
+  .record-details {
+    gap: 6px;
+    margin-top: 10px;
+  }
+
+  .record-details p {
+    font-size: 0.95rem;
+    line-height: 1.45;
+  }
+
+  .record-note {
+    margin-top: 10px;
+    padding: 12px;
+  }
+
+  .record-note strong {
+    font-size: 0.95rem;
+  }
+
+  .record-note p,
+  .record-note li {
+    font-size: 0.93rem;
+    line-height: 1.45;
+  }
+
+  .record-actions {
+    margin-top: 12px;
+  }
+
+  .record-actions .button,
+  .record-actions .button-secondary {
+    width: 100%;
+  }
+}
+
+/* =========================
+   DETALHES MOBILE
+========================= */
+
+@media (max-width: 700px) {
+  .detail-card {
+    padding: 14px;
+  }
+
+  .detail-header {
+    margin-bottom: 12px;
+  }
+
+  .detail-header h3 {
+    font-size: 1.2rem;
+  }
+
+  .detail-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .detail-grid p {
+    font-size: 0.95rem;
+    line-height: 1.45;
+  }
+
+  .detail-note {
+    margin-top: 12px;
+    padding: 12px;
+  }
+
+  .detail-note p,
+  .detail-list li {
+    font-size: 0.93rem;
+    line-height: 1.45;
+  }
+}
+
+/* =========================
+   CHECKLIST MOBILE PREMIUM
+========================= */
+
+@media (max-width: 700px) {
+  .checklist-form-layout {
+    gap: 14px;
+  }
+
+  .checklist-header-card,
+  .checklist-section-card {
+    padding: 14px;
+  }
+
+  .checklist-meta {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    margin: 8px 0 14px;
+  }
+
+  .checklist-meta p {
+    font-size: 0.95rem;
+    line-height: 1.4;
+  }
+
+  .checklist-header-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .checklist-section-card .data-table tr {
+    padding: 12px;
+    margin-bottom: 12px;
+    border-radius: 14px;
+  }
+
+  .checklist-section-card .data-table td {
+    padding: 7px 0;
+  }
+
+  .checklist-section-card .data-table td::before {
+    font-size: 0.9rem;
+    margin-bottom: 4px;
+  }
+
+  .checklist-section-card input[type="text"],
+  .checklist-section-card input[type="date"],
+  .checklist-section-card select,
+  .checklist-section-card textarea {
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  .checklist-section-card textarea {
+    min-height: 80px;
+  }
+
+  .checklist-section-card input[type="radio"] {
+    transform: scale(1.15);
+    margin-right: 6px;
+  }
+
+  .section-title-row h3 {
+    font-size: 1.1rem;
+  }
+}
+
+/* =========================
+   TOQUE MOBILE
+========================= */
+
+@media (max-width: 700px) {
+  .button,
+  .button-secondary,
+  .nav-link,
+  input,
+  select,
+  textarea {
+    min-height: 44px;
+  }
+
+  .button,
+  .button-secondary {
+    font-size: 0.96rem;
+  }
+}
+
+/* =========================
+   CHECKLIST DESKTOP AJUSTE
+========================= */
+
+.checklist-section-card .data-table td {
+  vertical-align: middle;
+}
+
+.checklist-section-card .data-table input[type="text"] {
+  width: 100%;
+  min-height: 40px;
+  padding: 10px 12px;
+}
+
+.checklist-section-card .data-table textarea {
+  width: 100%;
+  min-height: 70px;
+  padding: 10px 12px;
+  resize: vertical;
+}
+
+.checklist-section-card .data-table tr {
+  height: auto;
+}
+
+.checklist-section-card .data-table td[data-label="Descrição"] {
+  min-width: 260px;
+}
+
+.checklist-section-card .data-table td[data-label="R"],
+.checklist-section-card .data-table td[data-label="S"],
+.checklist-section-card .data-table td[data-label="T"] {
+  min-width: 120px;
+}
+
+.checklist-section-card .data-table td[data-label="Observação"] {
+  min-width: 220px;
 }

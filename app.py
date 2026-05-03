@@ -593,7 +593,7 @@ def checklist_modelos():
     return render_template("checklist_modelos.html", modelos=modelos)
 
 
-@app.route("/checklists/<int:modelo_id>")
+@app.route("/checklists/<int:modelo_id>", methods=["GET", "POST"])
 @login_required
 def checklist_preencher(modelo_id):
     modelo = ChecklistModelo.query.get_or_404(modelo_id)
@@ -606,12 +606,183 @@ def checklist_preencher(modelo_id):
         checklist_modelo_id=modelo.id
     ).order_by(ChecklistSecao.ordem.asc()).all()
 
+    if request.method == "POST":
+        execucao = ChecklistExecucao(
+            checklist_modelo_id=modelo.id,
+            usuario_id=session.get("usuario_id"),
+            status_execucao="concluido"
+        )
+
+        for campo in campos_cabecalho:
+            valor = request.form.get(campo.nome_campo, "").strip()
+            execucao.cabecalhos.append(
+                ChecklistExecucaoCabecalho(
+                    nome_campo=campo.nome_campo,
+                    valor_texto=valor
+                )
+            )
+
+        for secao in secoes:
+            itens_ordenados = sorted(secao.itens, key=lambda x: x.ordem)
+
+            for item in itens_ordenados:
+                resposta = ChecklistResposta(
+                    checklist_item_modelo_id=item.id,
+                    status_marcacao=request.form.get(f"item_{item.id}_status", "").strip(),
+                    valor_r=request.form.get(f"item_{item.id}_r", "").strip(),
+                    valor_s=request.form.get(f"item_{item.id}_s", "").strip(),
+                    valor_t=request.form.get(f"item_{item.id}_t", "").strip(),
+                    observacao=request.form.get(f"item_{item.id}_observacao", "").strip(),
+                    resolvido=request.form.get(f"item_{item.id}_resolvido", "").strip(),
+                    chamado=request.form.get(f"item_{item.id}_chamado", "").strip(),
+                    descricao_problema=request.form.get(f"item_{item.id}_descricao_problema", "").strip(),
+                )
+                execucao.respostas.append(resposta)
+
+        db.session.add(execucao)
+        db.session.commit()
+
+        flash("Checklist salvo com sucesso.", "success")
+        return redirect(url_for("checklist_historico"))
+
     return render_template(
         "checklist_preencher.html",
         modelo=modelo,
         campos_cabecalho=campos_cabecalho,
         secoes=secoes
     )
+
+@app.route("/checklists/historico")
+@login_required
+def checklist_historico():
+    execucoes = ChecklistExecucao.query.order_by(ChecklistExecucao.criado_em.desc()).all()
+
+    def valor_cabecalho(execucao, nome_campo):
+        for campo in execucao.cabecalhos:
+            if campo.nome_campo == nome_campo:
+                return campo.valor_texto
+        return ""
+
+    return render_template(
+        "checklist_historico.html",
+        execucoes=execucoes,
+        valor_cabecalho=valor_cabecalho
+    )
+
+    
+@app.route("/checklists/historico/<int:execucao_id>")
+@login_required
+def checklist_execucao_detalhe(execucao_id):
+    execucao = ChecklistExecucao.query.get_or_404(execucao_id)
+
+    cabecalho = {}
+    for campo in execucao.cabecalhos:
+        cabecalho[campo.nome_campo] = campo.valor_texto
+
+    respostas_map = {}
+    for resposta in execucao.respostas:
+        respostas_map[resposta.checklist_item_modelo_id] = resposta
+
+    secoes = ChecklistSecao.query.filter_by(
+        checklist_modelo_id=execucao.checklist_modelo_id
+    ).order_by(ChecklistSecao.ordem.asc()).all()
+
+    campos_modelo = ChecklistCampoCabecalho.query.filter_by(
+        checklist_modelo_id=execucao.checklist_modelo_id
+    ).order_by(ChecklistCampoCabecalho.ordem.asc()).all()
+
+    labels_cabecalho = {}
+    for campo in campos_modelo:
+        labels_cabecalho[campo.nome_campo] = campo.label_campo
+
+    total_respostas = len(execucao.respostas)
+    total_normais = sum(1 for r in execucao.respostas if r.status_marcacao == "Normal")
+    total_anormais = sum(1 for r in execucao.respostas if r.status_marcacao == "Anormal")
+    total_com_obs = sum(
+        1 for r in execucao.respostas
+        if (r.observacao and r.observacao.strip()) or (r.descricao_problema and r.descricao_problema.strip())
+    )
+    total_resolvidos = sum(1 for r in execucao.respostas if r.resolvido == "Sim")
+
+    return render_template(
+        "checklist_execucao_detalhe.html",
+        execucao=execucao,
+        cabecalho=cabecalho,
+        labels_cabecalho=labels_cabecalho,
+        secoes=secoes,
+        respostas_map=respostas_map,
+        total_respostas=total_respostas,
+        total_normais=total_normais,
+        total_anormais=total_anormais,
+        total_com_obs=total_com_obs,
+        total_resolvidos=total_resolvidos
+    )
+
+class ChecklistExecucao(db.Model):
+    __tablename__ = "checklist_execucoes"
+
+    id = db.Column(db.Integer, primary_key=True)
+    checklist_modelo_id = db.Column(db.Integer, db.ForeignKey("checklist_modelos.id"), nullable=False)
+    usuario_id = db.Column(db.Integer, db.ForeignKey("usuarios.id"), nullable=True)
+    status_execucao = db.Column(db.String(50), nullable=False, default="concluido")
+    criado_em = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+    modelo = db.relationship("ChecklistModelo", foreign_keys=[checklist_modelo_id])
+    usuario = db.relationship("Usuario", foreign_keys=[usuario_id])
+
+    cabecalhos = db.relationship(
+        "ChecklistExecucaoCabecalho",
+        backref="execucao",
+        cascade="all, delete-orphan",
+        lazy=True
+    )
+
+    respostas = db.relationship(
+        "ChecklistResposta",
+        backref="execucao",
+        cascade="all, delete-orphan",
+        lazy=True
+    )
+
+
+class ChecklistExecucaoCabecalho(db.Model):
+    __tablename__ = "checklist_execucao_cabecalho"
+
+    id = db.Column(db.Integer, primary_key=True)
+    checklist_execucao_id = db.Column(
+        db.Integer,
+        db.ForeignKey("checklist_execucoes.id", ondelete="CASCADE"),
+        nullable=False
+    )
+    nome_campo = db.Column(db.String(100), nullable=False)
+    valor_texto = db.Column(db.Text)
+
+
+class ChecklistResposta(db.Model):
+    __tablename__ = "checklist_respostas"
+
+    id = db.Column(db.Integer, primary_key=True)
+    checklist_execucao_id = db.Column(
+        db.Integer,
+        db.ForeignKey("checklist_execucoes.id", ondelete="CASCADE"),
+        nullable=False
+    )
+    checklist_item_modelo_id = db.Column(
+        db.Integer,
+        db.ForeignKey("checklist_itens_modelo.id", ondelete="CASCADE"),
+        nullable=False
+    )
+
+    status_marcacao = db.Column(db.String(20))
+    valor_r = db.Column(db.String(50))
+    valor_s = db.Column(db.String(50))
+    valor_t = db.Column(db.String(50))
+    observacao = db.Column(db.Text)
+    resolvido = db.Column(db.String(10))
+    chamado = db.Column(db.String(50))
+    descricao_problema = db.Column(db.Text)
+
+    item_modelo = db.relationship("ChecklistItemModelo", foreign_keys=[checklist_item_modelo_id])
 
 
 
@@ -628,3 +799,5 @@ with app.app_context():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
+

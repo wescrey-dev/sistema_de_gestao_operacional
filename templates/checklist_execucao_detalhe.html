@@ -1,0 +1,187 @@
+{% extends 'base.html' %} {% block title %}Detalhes do Checklist{% endblock %}
+{% block page_title %}Detalhes do checklist preenchido{% endblock %} {% block
+page_description %}Visualização completa da execução salva.{% endblock %} {%
+block content %}
+<section class="detail-layout">
+  <article class="card detail-card checklist-detail-hero">
+    <div class="detail-header">
+      <div>
+        <span class="pill">Checklist salvo</span>
+        <h3>{{ execucao.modelo.nome }}</h3>
+        <p class="muted">
+          Execução #{{ execucao.id }} · {{ execucao.criado_em.strftime("%d/%m/%Y
+          %H:%M:%S") }}
+        </p>
+      </div>
+
+      <div class="record-actions">
+        <span class="status-badge status-{{ execucao.status_execucao|lower }}">
+          {{ execucao.status_execucao }}
+        </span>
+        <a
+          class="button button-secondary"
+          href="{{ url_for('checklist_historico') }}"
+          >Voltar</a
+        >
+      </div>
+    </div>
+
+    <div class="summary-grid">
+      <div class="summary-card">
+        <span class="summary-label">Total de respostas</span>
+        <strong>{{ total_respostas }}</strong>
+      </div>
+
+      <div class="summary-card">
+        <span class="summary-label">Normais</span>
+        <strong>{{ total_normais }}</strong>
+      </div>
+
+      <div class="summary-card danger-soft">
+        <span class="summary-label">Anormais</span>
+        <strong>{{ total_anormais }}</strong>
+      </div>
+
+      <div class="summary-card">
+        <span class="summary-label">Com observação</span>
+        <strong>{{ total_com_obs }}</strong>
+      </div>
+
+      <div class="summary-card">
+        <span class="summary-label">Resolvidos</span>
+        <strong>{{ total_resolvidos }}</strong>
+      </div>
+    </div>
+  </article>
+
+  <article class="card detail-card">
+    <h3 class="section-title">Informações da execução</h3>
+
+    <div class="detail-grid">
+      <p><strong>ID:</strong> {{ execucao.id }}</p>
+      <p><strong>Status:</strong> {{ execucao.status_execucao }}</p>
+      <p><strong>Modelo:</strong> {{ execucao.modelo.nome }}</p>
+      <p>
+        <strong>Criado por:</strong> {{ execucao.usuario.nome if
+        execucao.usuario else "-" }}
+      </p>
+      <p>
+        <strong>Criado em:</strong> {{ execucao.criado_em.strftime("%d/%m/%Y
+        %H:%M:%S") }}
+      </p>
+      <p>
+        <strong>Área padrão:</strong> {{ execucao.modelo.area_padrao or "-" }}
+      </p>
+    </div>
+  </article>
+
+  <article class="card detail-card">
+    <h3 class="section-title">Cabeçalho do checklist</h3>
+
+    <div class="checklist-head-summary">
+      {% for chave, valor in cabecalho.items() %}
+      <div class="head-item-card">
+        <span class="head-item-label">
+          {{ labels_cabecalho.get(chave, chave|replace('_', ' ')|title) }}
+        </span>
+        <strong>{{ valor or '-' }}</strong>
+      </div>
+      {% endfor %}
+    </div>
+  </article>
+
+  {% for secao in secoes %}
+  <article class="card detail-card">
+    <div class="section-title-row">
+      <h3>{{ secao.titulo }}</h3>
+      <span class="pill">{{ secao.tipo_secao }}</span>
+    </div>
+
+    {% if secao.tipo_secao == "observacoes_gerais" %}
+    <div class="table-wrap">
+      <table class="data-table checklist-detail-table">
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th>Chamado</th>
+            <th>Descrição do problema</th>
+            <th>Resolvido</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in secao.itens|sort(attribute='ordem') %} {% set resposta
+          = respostas_map.get(item.id) %}
+          <tr>
+            <td>{{ item.numero_item or "-" }}</td>
+            <td>
+              {{ resposta.chamado if resposta and resposta.chamado else "-" }}
+            </td>
+            <td>
+              {{ resposta.descricao_problema if resposta and
+              resposta.descricao_problema else "-" }}
+            </td>
+            <td>
+              {% if resposta and resposta.resolvido %}
+              <span class="status-badge status-inline">
+                {{ resposta.resolvido }}
+              </span>
+              {% else %} - {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% else %}
+    <div class="table-wrap">
+      <table class="data-table checklist-detail-table">
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th>Descrição</th>
+            <th>Status</th>
+            <th>R</th>
+            <th>S</th>
+            <th>T</th>
+            <th>Observação</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in secao.itens|sort(attribute='ordem') %} {% set resposta
+          = respostas_map.get(item.id) %}
+          <tr>
+            <td>{{ item.numero_item or "-" }}</td>
+            <td>{{ item.descricao }}</td>
+            <td>
+              {% if resposta and resposta.status_marcacao %}
+              <span
+                class="status-badge {% if resposta.status_marcacao == 'Anormal' %}status-danger{% else %}status-ok{% endif %}"
+              >
+                {{ resposta.status_marcacao }}
+              </span>
+              {% else %} - {% endif %}
+            </td>
+            <td>
+              {{ resposta.valor_r if resposta and resposta.valor_r else "-" }}
+            </td>
+            <td>
+              {{ resposta.valor_s if resposta and resposta.valor_s else "-" }}
+            </td>
+            <td>
+              {{ resposta.valor_t if resposta and resposta.valor_t else "-" }}
+            </td>
+            <td>
+              {{ resposta.observacao if resposta and resposta.observacao else
+              "-" }}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% endif %}
+  </article>
+  {% endfor %}
+</section>
+{% endblock %}

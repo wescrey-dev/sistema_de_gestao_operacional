@@ -2,6 +2,16 @@
 page_title %}Modelos de checklist{% endblock %} {% block page_description
 %}Selecione um modelo para preencher o checklist digital.{% endblock %} {% block
 content %}
+
+<div class="record-actions" style="margin-bottom: 16px">
+  <a
+    class="button button-secondary"
+    href="{{ url_for('checklist_historico') }}"
+  >
+    Ver histórico de checklists
+  </a>
+</div>
+
 <section class="record-grid">
   {% for modelo in modelos %}
   <article class="card record-card checklist-model-card">

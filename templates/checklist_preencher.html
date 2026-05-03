@@ -1,7 +1,7 @@
 {% extends 'base.html' %} {% block title %}Preencher Checklist{% endblock %} {%
 block page_title %}{{ modelo.nome }}{% endblock %} {% block page_description
 %}Modelo digital para execução do checklist.{% endblock %} {% block content %}
-<form class="checklist-form-layout">
+<form method="POST" class="checklist-form-layout">
   <section class="card checklist-header-card">
     <div class="detail-header">
       <div>
@@ -128,55 +128,66 @@ block page_title %}{{ modelo.nome }}{% endblock %} {% block page_description
 
     {% else %}
     <div class="table-wrap">
-      <table class="data-table">
+      <table class="data-table checklist-compact-table">
         <thead>
           <tr>
             <th>Item</th>
             <th>Descrição</th>
-            <th>Normal</th>
-            <th>Anormal</th>
-            <th>R</th>
-            <th>S</th>
-            <th>T</th>
+            <th>Status</th>
+            <th>Leituras</th>
             <th>Observação</th>
           </tr>
         </thead>
         <tbody>
           {% for item in secao.itens|sort(attribute='ordem') %}
           <tr>
-            <td data-label="Item">{{ item.numero_item or "-" }}</td>
-            <td data-label="Descrição">{{ item.descricao }}</td>
-
-            <td data-label="Normal">
-              {% if item.usa_normal_anormal %}
-              <input
-                type="radio"
-                name="item_{{ item.id }}_status"
-                value="Normal"
-              />
-              {% else %} - {% endif %}
+            <td data-label="Item">
+              <span class="item-badge">{{ item.numero_item or "-" }}</span>
             </td>
 
-            <td data-label="Anormal">
-              {% if item.usa_normal_anormal %}
-              <input
-                type="radio"
-                name="item_{{ item.id }}_status"
-                value="Anormal"
-              />
-              {% else %} - {% endif %}
+            <td data-label="Descrição">
+              <div class="item-description">{{ item.descricao }}</div>
             </td>
 
-            <td data-label="R">
-              <input type="text" name="item_{{ item.id }}_r" />
+            <td data-label="Status">
+              <div class="status-choice-group">
+                <label class="status-choice">
+                  <input
+                    type="radio"
+                    name="item_{{ item.id }}_status"
+                    value="Normal"
+                  />
+                  <span>Normal</span>
+                </label>
+
+                <label class="status-choice">
+                  <input
+                    type="radio"
+                    name="item_{{ item.id }}_status"
+                    value="Anormal"
+                  />
+                  <span>Anormal</span>
+                </label>
+              </div>
             </td>
 
-            <td data-label="S">
-              <input type="text" name="item_{{ item.id }}_s" />
-            </td>
+            <td data-label="Leituras">
+              <div class="rst-grid">
+                <label>
+                  <small>R</small>
+                  <input type="text" name="item_{{ item.id }}_r" />
+                </label>
 
-            <td data-label="T">
-              <input type="text" name="item_{{ item.id }}_t" />
+                <label>
+                  <small>S</small>
+                  <input type="text" name="item_{{ item.id }}_s" />
+                </label>
+
+                <label>
+                  <small>T</small>
+                  <input type="text" name="item_{{ item.id }}_t" />
+                </label>
+              </div>
             </td>
 
             <td data-label="Observação">
@@ -194,8 +205,12 @@ block page_title %}{{ modelo.nome }}{% endblock %} {% block page_description
   </section>
   {% endfor %}
 
-  <section class="form-actions">
-    <button type="button" class="button">Salvar checklist</button>
+  <section class="form-actions checklist-save-bar">
+    <button type="submit" class="button">Salvar checklist</button>
   </section>
 </form>
+
+<a class="button button-secondary" href="{{ url_for('checklist_historico') }}"
+  >Histórico</a
+>
 {% endblock %}

@@ -2,7 +2,7 @@
 page_title %}OPAI · Auditoria comportamental{% endblock %}{% block
 page_description %}Cadastro da auditoria com desvios observados e ação
 corretiva.{% endblock %}{% block content %}
-<form method="POST" class="card form-shell">
+<form method="POST" class="card form-shell safety-form opai-form">
   <section class="form-section">
     <h3>Identificação</h3>
     <div class="form-grid">
@@ -41,8 +41,8 @@ corretiva.{% endblock %}{% block content %}
   </section>
   <section class="form-section">
     <h3>Desvios observados</h3>
-    <div class="table-wrap">
-      <table class="data-table">
+    <div class="table-wrap safety-table-wrap">
+      <table class="data-table safety-mobile-table">
         <thead>
           <tr>
             <th>Nº Seq.</th>
@@ -57,9 +57,9 @@ corretiva.{% endblock %}{% block content %}
         <tbody>
           {% for i in range(1,6) %}
           <tr>
-            <td><input type="text" name="desvio_seq[]" value="{{ i }}" /></td>
-            <td><textarea name="desvio_descricao[]" rows="2"></textarea></td>
-            <td>
+            <td data-label="NÂº Seq."><input type="text" name="desvio_seq[]" value="{{ i }}" /></td>
+            <td data-label="DescriÃ§Ã£o"><textarea name="desvio_descricao[]" rows="2"></textarea></td>
+            <td data-label="Categoria">
               <select name="desvio_categoria[]">
                 <option value=""></option>
                 {% for item in categorias %}
@@ -67,7 +67,7 @@ corretiva.{% endblock %}{% block content %}
                 {% endfor %}
               </select>
             </td>
-            <td>
+            <td data-label="Sub-classe">
               <select name="desvio_subclasse[]">
                 <option value=""></option>
                 {% for item in subclasses %}
@@ -75,7 +75,7 @@ corretiva.{% endblock %}{% block content %}
                 {% endfor %}
               </select>
             </td>
-            <td>
+            <td data-label="Classe">
               <select name="desvio_classe[]">
                 <option value=""></option>
                 {% for item in classes %}
@@ -83,7 +83,7 @@ corretiva.{% endblock %}{% block content %}
                 {% endfor %}
               </select>
             </td>
-            <td>
+            <td data-label="Criticidade">
               <select name="desvio_criticidade[]">
                 <option value=""></option>
                 {% for item in criticidades %}
@@ -91,14 +91,14 @@ corretiva.{% endblock %}{% block content %}
                 {% endfor %}
               </select>
             </td>
-            <td><input type="text" name="desvio_acao[]" /></td>
+            <td data-label="AÃ§Ã£o imediata"><input type="text" name="desvio_acao[]" /></td>
           </tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
   </section>
-  <div class="form-actions">
+  <div class="form-actions safety-save-actions">
     <button class="button" type="submit">Salvar OPAI</button>
   </div>
 </form>

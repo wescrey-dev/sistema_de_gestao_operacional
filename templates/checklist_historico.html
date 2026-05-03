@@ -1,0 +1,51 @@
+{% extends 'base.html' %} {% block title %}Histórico de Checklists{% endblock %}
+{% block page_title %}Histórico de checklists{% endblock %} {% block
+page_description %}Checklists preenchidos e salvos no sistema.{% endblock %} {%
+block content %}
+<section class="record-grid">
+  {% for execucao in execucoes %}
+  <article class="card record-card">
+    <div class="record-header">
+      <div>
+        <span class="pill">Checklist</span>
+        <strong>{{ execucao.modelo.nome }}</strong>
+      </div>
+      <span class="pill">{{ execucao.status_execucao }}</span>
+    </div>
+
+    <div class="record-details">
+      <p><strong>ID:</strong> {{ execucao.id }}</p>
+      <p>
+        <strong>Data do checklist:</strong> {{ valor_cabecalho(execucao,
+        'data_execucao') or '-' }}
+      </p>
+      <p>
+        <strong>Área/local:</strong> {{ valor_cabecalho(execucao, 'area_local')
+        or execucao.modelo.area_padrao or '-' }}
+      </p>
+      <p>
+        <strong>Responsável:</strong>
+        {{ valor_cabecalho(execucao, 'responsavel_1') or
+        valor_cabecalho(execucao, 'responsavel') or (execucao.usuario.nome if
+        execucao.usuario else '-') }}
+      </p>
+      <p>
+        <strong>Criado em:</strong> {{ execucao.criado_em.strftime("%d/%m/%Y
+        %H:%M:%S") }}
+      </p>
+    </div>
+
+    <div class="record-actions">
+      <a
+        class="button button-secondary"
+        href="{{ url_for('checklist_execucao_detalhe', execucao_id=execucao.id) }}"
+      >
+        Ver detalhes
+      </a>
+    </div>
+  </article>
+  {% else %}
+  <p class="muted">Nenhum checklist salvo ainda.</p>
+  {% endfor %}
+</section>
+{% endblock %}

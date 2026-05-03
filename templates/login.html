@@ -1,64 +1,87 @@
-{% extends 'base.html' %} {% block title %}Login{% endblock %} {% block content
-%}
-<section class="auth-shell auth-shell-mobile">
-  <div class="auth-hero">
-    <span class="pill">Acesso seguro</span>
+{% extends 'base.html' %} {% block title %}Login{% endblock %} {% block
+page_title %}{% endblock %} {% block page_description %}{% endblock %} {% block
+base_flashes %}{% endblock %} {% block content %}
+<section class="auth-shell auth-shell-login">
+  <div class="auth-panel auth-panel-info">
+    <span class="auth-kicker">Acesso seguro</span>
+
     <h1>Entrar no sistema</h1>
-    <p>
-      Acesse o painel de Segurança Operacional para registrar OPAI, AP e IPS,
-      acompanhar desvios e manter o controle centralizado das inspeções.
+
+    <p class="auth-description">
+      Acesse o painel de Segurança Operacional para registrar OPAI, AP, IPS e
+      CHECKLIST, acompanhar desvios e manter o controle centralizado das
+      inspeções.
     </p>
 
     <div class="auth-feature-list">
-      <div class="auth-feature">
-        <strong>Controle centralizado</strong>
-        <span>Todos os registros em um único ambiente</span>
-      </div>
+      <article class="auth-feature-card">
+        <h3>Controle centralizado</h3>
+        <p>Todos os registros em um único ambiente.</p>
+      </article>
 
-      <div class="auth-feature">
-        <strong>Base MySQL</strong>
-        <span>Dados estruturados para crescimento do sistema</span>
-      </div>
+      <article class="auth-feature-card">
+        <h3>Base estruturada</h3>
+        <p>Dados organizados para crescimento do sistema.</p>
+      </article>
 
-      <div class="auth-feature">
-        <strong>Pronto para mobile</strong>
-        <span>Layout moderno e preparado para evolução</span>
-      </div>
+      <article class="auth-feature-card">
+        <h3>Pronto para mobile</h3>
+        <p>Layout moderno, leve e preparado para uso diário.</p>
+      </article>
     </div>
   </div>
 
-  <form method="POST" class="card auth-card">
-    <div class="auth-card-header">
-      <h2>Bem-vindo de volta</h2>
-      <p class="muted">Use seu email e senha para continuar.</p>
+  <div class="auth-panel auth-panel-form">
+    {% with messages = get_flashed_messages(with_categories=true) %} {% if
+    messages %}
+    <div class="auth-alert-stack">
+      {% for category, message in messages %}
+      <div class="auth-alert auth-alert-{{ category }}">{{ message }}</div>
+      {% endfor %}
     </div>
+    {% endif %} {% endwith %}
 
-    <label>
-      Email
-      <input
-        type="email"
-        name="email"
-        placeholder="seuemail@empresa.com"
-        required
-      />
-    </label>
+    <div class="auth-form-card">
+      <div class="auth-form-topline"></div>
 
-    <label>
-      Senha
-      <input
-        type="password"
-        name="senha"
-        placeholder="Digite sua senha"
-        required
-      />
-    </label>
+      <div class="auth-form-header">
+        <h2>Bem-vindo de volta</h2>
+        <p>Use seu email e senha para continuar.</p>
+      </div>
 
-    <button class="button auth-button" type="submit">Entrar no sistema</button>
+      <form method="POST" class="auth-form-grid">
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            placeholder="seuemail@empresa.com"
+            required
+          />
+        </div>
 
-    <p class="auth-switch">
-      Ainda não tem conta?
-      <a href="{{ url_for('register') }}">Criar usuário</a>
-    </p>
-  </form>
+        <div class="form-group">
+          <label for="senha">Senha</label>
+          <input
+            type="password"
+            id="senha"
+            name="senha"
+            placeholder="Digite sua senha"
+            required
+          />
+        </div>
+
+        <button type="submit" class="button auth-submit-button">
+          Entrar no sistema
+        </button>
+      </form>
+
+      <p class="auth-form-footer">
+        Ainda não tem conta?
+        <a href="{{ url_for('register') }}">Criar usuário</a>
+      </p>
+    </div>
+  </div>
 </section>
 {% endblock %}

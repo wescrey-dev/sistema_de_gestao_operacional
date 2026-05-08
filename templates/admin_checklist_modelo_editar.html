@@ -1,0 +1,172 @@
+{% extends 'base.html' %}
+{% block title %}Editar Modelo{% endblock %}
+{% block page_title %}Editar modelo{% endblock %}
+{% block page_description %}Edite os dados do modelo, seções e itens cadastrados.{% endblock %}
+
+{% block content %}
+<style>
+  .admin-edit-card {
+    padding: 18px;
+    margin-bottom: 18px;
+  }
+
+  .admin-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+
+  .admin-grid-1 {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .admin-item-table input[type="text"],
+  .admin-item-table input[type="number"],
+  .admin-item-table textarea,
+  .admin-item-table select {
+    width: 100%;
+  }
+
+  .checkbox-inline {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .section-card {
+    border: 1px solid #e5e7eb;
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+
+  .section-card h4 {
+    margin: 0 0 10px 0;
+  }
+
+  @media (max-width: 900px) {
+    .admin-grid-2 {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<form method="POST">
+  <section class="card admin-edit-card">
+    <div class="detail-header">
+      <div>
+        <span class="pill">Admin</span>
+        <h3>{{ modelo.nome }}</h3>
+      </div>
+      <a class="button button-secondary" href="{{ url_for('admin_checklist_modelos') }}">Voltar</a>
+    </div>
+
+    <div class="admin-grid-2" style="margin-top: 16px;">
+      <label>
+        Nome
+        <input type="text" name="nome" value="{{ modelo.nome }}" required>
+      </label>
+
+      <label>
+        Código
+        <input type="text" name="codigo" value="{{ modelo.codigo or '' }}">
+      </label>
+
+      <label>
+        Área padrão
+        <input type="text" name="area_padrao" value="{{ modelo.area_padrao or '' }}">
+      </label>
+
+      <label>
+        Status
+        <select name="ativo">
+          <option value="1" {% if modelo.ativo %}selected{% endif %}>Ativo</option>
+          <option value="0" {% if not modelo.ativo %}selected{% endif %}>Inativo</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="admin-grid-1" style="margin-top: 14px;">
+      <label>
+        Descrição
+        <textarea name="descricao" rows="3">{{ modelo.descricao or '' }}</textarea>
+      </label>
+    </div>
+  </section>
+
+  {% for secao in secoes %}
+  <section class="card admin-edit-card">
+    <div class="section-card">
+      <div class="admin-grid-2">
+        <label>
+          Título da seção
+          <input type="text" name="secao_{{ secao.id }}_titulo" value="{{ secao.titulo }}">
+        </label>
+
+        <label>
+          Ordem da seção
+          <input type="number" name="secao_{{ secao.id }}_ordem" value="{{ secao.ordem }}">
+        </label>
+      </div>
+
+      <p style="margin-top: 10px;"><strong>Tipo:</strong> {{ secao.tipo_secao }}</p>
+
+      <div class="table-wrap" style="margin-top: 14px;">
+        <table class="data-table admin-item-table">
+          <thead>
+            <tr>
+              <th>Nº item</th>
+              <th>Descrição</th>
+              <th>Ordem</th>
+              <th>N/A</th>
+              <th>R/S/T</th>
+              <th>Observação</th>
+              <th>Resolvido</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in secao.itens_admin %}
+            <tr>
+              <td>
+                <input type="text" name="item_{{ item.id }}_numero_item" value="{{ item.numero_item or '' }}">
+              </td>
+
+              <td>
+                <textarea name="item_{{ item.id }}_descricao" rows="2">{{ item.descricao or '' }}</textarea>
+              </td>
+
+              <td>
+                <input type="number" name="item_{{ item.id }}_ordem" value="{{ item.ordem }}">
+              </td>
+
+              <td class="checkbox-inline">
+                <input type="checkbox" name="item_{{ item.id }}_usa_normal_anormal" value="1" {% if item.usa_normal_anormal %}checked{% endif %}>
+              </td>
+
+              <td class="checkbox-inline">
+                <input type="checkbox" name="item_{{ item.id }}_usa_valores_rst" value="1" {% if item.usa_valores_rst %}checked{% endif %}>
+              </td>
+
+              <td class="checkbox-inline">
+                <input type="checkbox" name="item_{{ item.id }}_usa_observacao" value="1" {% if item.usa_observacao %}checked{% endif %}>
+              </td>
+
+              <td class="checkbox-inline">
+                <input type="checkbox" name="item_{{ item.id }}_usa_resolvido" value="1" {% if item.usa_resolvido %}checked{% endif %}>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+  {% endfor %}
+
+  <section class="form-actions">
+    <button type="submit" class="button">Salvar alterações</button>
+  </section>
+</form>
+{% endblock %}

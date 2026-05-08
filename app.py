@@ -606,6 +606,43 @@ def checklist_preencher(modelo_id):
         checklist_modelo_id=modelo.id
     ).order_by(ChecklistSecao.ordem.asc()).all()
 
+    # Busca último histórico útil das observações gerais
+    historico_observacoes = {}
+
+    execucoes_anteriores = (
+        ChecklistExecucao.query
+        .filter_by(checklist_modelo_id=modelo.id)
+        .order_by(ChecklistExecucao.id.desc())
+        .all()
+    )
+
+    itens_processados = set()
+
+    for exec_ant in execucoes_anteriores:
+        for resposta in exec_ant.respostas:
+            item_id = resposta.checklist_item_modelo_id
+
+            if item_id in itens_processados:
+                continue
+
+            resolvido_norm = (resposta.resolvido or "").strip().lower()
+            chamado = (resposta.chamado or "").strip()
+            descricao = (resposta.descricao_problema or "").strip()
+
+            # ignora respostas totalmente vazias
+            if not resolvido_norm and not chamado and not descricao:
+                continue
+
+            itens_processados.add(item_id)
+
+            # só reaproveita se o último estado útil foi "nao"
+            if resolvido_norm == "nao" and descricao:
+                historico_observacoes[item_id] = {
+                    "chamado": chamado,
+                    "descricao_problema": descricao,
+                    "resolvido": resolvido_norm,
+                }
+
     if request.method == "POST":
         execucao = ChecklistExecucao(
             checklist_modelo_id=modelo.id,
@@ -626,17 +663,34 @@ def checklist_preencher(modelo_id):
             itens_ordenados = sorted(secao.itens, key=lambda x: x.ordem)
 
             for item in itens_ordenados:
+                status_marcacao = request.form.get(f"item_{item.id}_status", "").strip()
+                valor_r = request.form.get(f"item_{item.id}_r", "").strip()
+                valor_s = request.form.get(f"item_{item.id}_s", "").strip()
+                valor_t = request.form.get(f"item_{item.id}_t", "").strip()
+                observacao = request.form.get(f"item_{item.id}_observacao", "").strip()
+                resolvido = request.form.get(f"item_{item.id}_resolvido", "").strip().lower()
+                chamado = request.form.get(f"item_{item.id}_chamado", "").strip()
+                descricao_problema = request.form.get(f"item_{item.id}_descricao_problema", "").strip()
+
+                if resolvido == "sim":
+                    descricao_problema = ""
+
+                if resolvido == "nao" and not descricao_problema:
+                    flash("Quando marcar 'Não' em Resolvido, a descrição do problema é obrigatória.", "danger")
+                    return redirect(request.url)
+
                 resposta = ChecklistResposta(
                     checklist_item_modelo_id=item.id,
-                    status_marcacao=request.form.get(f"item_{item.id}_status", "").strip(),
-                    valor_r=request.form.get(f"item_{item.id}_r", "").strip(),
-                    valor_s=request.form.get(f"item_{item.id}_s", "").strip(),
-                    valor_t=request.form.get(f"item_{item.id}_t", "").strip(),
-                    observacao=request.form.get(f"item_{item.id}_observacao", "").strip(),
-                    resolvido=request.form.get(f"item_{item.id}_resolvido", "").strip(),
-                    chamado=request.form.get(f"item_{item.id}_chamado", "").strip(),
-                    descricao_problema=request.form.get(f"item_{item.id}_descricao_problema", "").strip(),
+                    status_marcacao=status_marcacao,
+                    valor_r=valor_r,
+                    valor_s=valor_s,
+                    valor_t=valor_t,
+                    observacao=observacao,
+                    resolvido=resolvido,
+                    chamado=chamado,
+                    descricao_problema=descricao_problema,
                 )
+
                 execucao.respostas.append(resposta)
 
         db.session.add(execucao)
@@ -649,8 +703,235 @@ def checklist_preencher(modelo_id):
         "checklist_preencher.html",
         modelo=modelo,
         campos_cabecalho=campos_cabecalho,
-        secoes=secoes
+        secoes=secoes,
+        historico_observacoes=historico_observacoes,
     )
+
+# ====== ADMIN CHECKLISTS ======
+# Cole este bloco no app.py, depois das rotas principais de checklist.
+# Ajuste apenas se os nomes dos seus modelos/atributos forem diferentes.
+
+from flask import render_template, request, redirect, url_for, flash
+from sqlalchemy import func
+
+@app.route("/admin/checklists")
+@perfil_required("admin")
+def admin_checklist_modelos():
+    busca = request.args.get("q", "").strip()
+    area = request.args.get("area", "").strip()
+    ativo = request.args.get("ativo", "").strip()
+
+    query = ChecklistModelo.query
+
+    if busca:
+        termo = f"%{busca}%"
+        query = query.filter(
+            db.or_(
+                ChecklistModelo.nome.ilike(termo),
+                ChecklistModelo.codigo.ilike(termo),
+                ChecklistModelo.descricao.ilike(termo),
+            )
+        )
+
+    if area:
+        query = query.filter(ChecklistModelo.area_padrao == area)
+
+    if ativo == "1":
+        query = query.filter(ChecklistModelo.ativo.is_(True))
+    elif ativo == "0":
+        query = query.filter(ChecklistModelo.ativo.is_(False))
+
+    modelos = query.order_by(ChecklistModelo.nome.asc()).all()
+
+    areas = (
+        db.session.query(ChecklistModelo.area_padrao)
+        .filter(ChecklistModelo.area_padrao.isnot(None))
+        .filter(ChecklistModelo.area_padrao != "")
+        .distinct()
+        .order_by(ChecklistModelo.area_padrao.asc())
+        .all()
+    )
+    areas = [a[0] for a in areas]
+
+    resumo = {}
+    for modelo in modelos:
+        total_secoes = ChecklistSecao.query.filter_by(checklist_modelo_id=modelo.id).count()
+        total_itens = (
+            db.session.query(func.count(ChecklistItemModelo.id))
+            .join(ChecklistSecao, ChecklistItemModelo.checklist_secao_id == ChecklistSecao.id)
+            .filter(ChecklistSecao.checklist_modelo_id == modelo.id)
+            .scalar()
+        ) or 0
+        resumo[modelo.id] = {
+            "total_secoes": total_secoes,
+            "total_itens": total_itens,
+        }
+
+    return render_template(
+        "admin_checklist_modelos.html",
+        modelos=modelos,
+        areas=areas,
+        resumo=resumo,
+        busca=busca,
+        area=area,
+        ativo=ativo,
+    )
+
+
+@app.route("/admin/checklists/<int:modelo_id>/editar", methods=["GET", "POST"])
+@perfil_required("admin")
+def admin_editar_checklist_modelo(modelo_id):
+    modelo = ChecklistModelo.query.get_or_404(modelo_id)
+
+    if request.method == "POST":
+        modelo.nome = request.form.get("nome", "").strip()
+        modelo.codigo = request.form.get("codigo", "").strip()
+        modelo.descricao = request.form.get("descricao", "").strip()
+        modelo.area_padrao = request.form.get("area_padrao", "").strip()
+        modelo.ativo = request.form.get("ativo") == "1"
+
+        if not modelo.nome:
+            flash("O nome do modelo é obrigatório.", "danger")
+            return redirect(request.url)
+
+        secoes = ChecklistSecao.query.filter_by(
+            checklist_modelo_id=modelo.id
+        ).order_by(ChecklistSecao.ordem.asc()).all()
+
+        for secao in secoes:
+            titulo = request.form.get(f"secao_{secao.id}_titulo", "").strip()
+            ordem = request.form.get(f"secao_{secao.id}_ordem", "").strip()
+
+            if titulo:
+                secao.titulo = titulo
+
+            try:
+                secao.ordem = int(ordem) if ordem else secao.ordem
+            except ValueError:
+                pass
+
+            itens = ChecklistItemModelo.query.filter_by(
+                checklist_secao_id=secao.id
+            ).order_by(ChecklistItemModelo.ordem.asc()).all()
+
+            for item in itens:
+                numero_item = request.form.get(f"item_{item.id}_numero_item", "").strip()
+                descricao = request.form.get(f"item_{item.id}_descricao", "").strip()
+                ordem_item = request.form.get(f"item_{item.id}_ordem", "").strip()
+
+                item.numero_item = numero_item
+                item.descricao = descricao
+
+                try:
+                    item.ordem = int(ordem_item) if ordem_item else item.ordem
+                except ValueError:
+                    pass
+
+                item.usa_normal_anormal = request.form.get(f"item_{item.id}_usa_normal_anormal") == "1"
+                item.usa_valores_rst = request.form.get(f"item_{item.id}_usa_valores_rst") == "1"
+                item.usa_observacao = request.form.get(f"item_{item.id}_usa_observacao") == "1"
+                item.usa_resolvido = request.form.get(f"item_{item.id}_usa_resolvido") == "1"
+
+        db.session.commit()
+        flash("Modelo atualizado com sucesso.", "success")
+        return redirect(url_for("admin_editar_checklist_modelo", modelo_id=modelo.id))
+
+    secoes = ChecklistSecao.query.filter_by(
+        checklist_modelo_id=modelo.id
+    ).order_by(ChecklistSecao.ordem.asc()).all()
+
+    for secao in secoes:
+        secao.itens_admin = ChecklistItemModelo.query.filter_by(
+            checklist_secao_id=secao.id
+        ).order_by(ChecklistItemModelo.ordem.asc()).all()
+
+    return render_template(
+        "admin_checklist_modelo_editar.html",
+        modelo=modelo,
+        secoes=secoes,
+    )
+
+
+@app.route("/admin/checklists/<int:modelo_id>/toggle-ativo", methods=["POST"])
+@perfil_required("admin")
+def admin_toggle_checklist_modelo(modelo_id):
+    modelo = ChecklistModelo.query.get_or_404(modelo_id)
+    modelo.ativo = not bool(modelo.ativo)
+    db.session.commit()
+
+    status = "ativado" if modelo.ativo else "desativado"
+    flash(f'Modelo "{modelo.nome}" {status} com sucesso.', "success")
+    return redirect(url_for("admin_checklist_modelos"))
+
+
+@app.route("/admin/checklists/<int:modelo_id>/duplicar", methods=["POST"])
+@perfil_required("admin")
+def admin_duplicar_checklist_modelo(modelo_id):
+    modelo = ChecklistModelo.query.get_or_404(modelo_id)
+
+    novo_modelo = ChecklistModelo(
+        nome=f"{modelo.nome} - Cópia",
+        codigo=f"{(modelo.codigo or 'SEM-CODIGO')}-COPIA",
+        descricao=modelo.descricao,
+        area_padrao=modelo.area_padrao,
+        ativo=False,
+    )
+    db.session.add(novo_modelo)
+    db.session.flush()
+
+    campos = ChecklistCampoCabecalho.query.filter_by(
+        checklist_modelo_id=modelo.id
+    ).order_by(ChecklistCampoCabecalho.ordem.asc()).all()
+
+    for campo in campos:
+        db.session.add(
+            ChecklistCampoCabecalho(
+                checklist_modelo_id=novo_modelo.id,
+                nome_campo=campo.nome_campo,
+                label_campo=campo.label_campo,
+                tipo_campo=campo.tipo_campo,
+                obrigatorio=campo.obrigatorio,
+                ordem=campo.ordem,
+            )
+        )
+
+    secoes = ChecklistSecao.query.filter_by(
+        checklist_modelo_id=modelo.id
+    ).order_by(ChecklistSecao.ordem.asc()).all()
+
+    for secao in secoes:
+        nova_secao = ChecklistSecao(
+            checklist_modelo_id=novo_modelo.id,
+            titulo=secao.titulo,
+            tipo_secao=secao.tipo_secao,
+            ordem=secao.ordem,
+        )
+        db.session.add(nova_secao)
+        db.session.flush()
+
+        itens = ChecklistItemModelo.query.filter_by(
+            checklist_secao_id=secao.id
+        ).order_by(ChecklistItemModelo.ordem.asc()).all()
+
+        for item in itens:
+            db.session.add(
+                ChecklistItemModelo(
+                    checklist_secao_id=nova_secao.id,
+                    numero_item=item.numero_item,
+                    descricao=item.descricao,
+                    tipo_resposta=item.tipo_resposta,
+                    usa_normal_anormal=item.usa_normal_anormal,
+                    usa_valores_rst=item.usa_valores_rst,
+                    usa_observacao=item.usa_observacao,
+                    usa_resolvido=item.usa_resolvido,
+                    ordem=item.ordem,
+                )
+            )
+
+    db.session.commit()
+    flash(f'Modelo "{modelo.nome}" duplicado com sucesso.', "success")
+    return redirect(url_for("admin_editar_checklist_modelo", modelo_id=novo_modelo.id))
+
 
 @app.route("/checklists/historico")
 @login_required
@@ -703,6 +984,8 @@ def checklist_execucao_detalhe(execucao_id):
         if (r.observacao and r.observacao.strip()) or (r.descricao_problema and r.descricao_problema.strip())
     )
     total_resolvidos = sum(1 for r in execucao.respostas if r.resolvido == "Sim")
+
+
 
     return render_template(
         "checklist_execucao_detalhe.html",

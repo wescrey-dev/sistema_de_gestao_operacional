@@ -1,6 +1,39 @@
-{% extends 'base.html' %} {% block title %}Preencher Checklist{% endblock %} {%
-block page_title %}{{ modelo.nome }}{% endblock %} {% block page_description
-%}Modelo digital para execução do checklist.{% endblock %} {% block content %}
+{% extends 'base.html' %}
+{% block title %}Preencher Checklist{% endblock %}
+{% block page_title %}{{ modelo.nome }}{% endblock %}
+{% block page_description %}Modelo digital para execução do checklist.{% endblock %}
+
+{% block content %}
+<style>
+  .pendencia-anterior-row {
+    background: #fff8db;
+  }
+
+  .pendencia-anterior-row td {
+    background: #fff8db;
+  }
+
+  .pendencia-badge {
+    display: inline-block;
+    margin-top: 8px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #8a5a00;
+    background: #ffe8a3;
+    border: 1px solid #f3d36a;
+  }
+
+  .pendencia-ajuda {
+    display: block;
+    margin-top: 6px;
+    font-size: 12px;
+    color: #8a5a00;
+    font-weight: 600;
+  }
+</style>
+
 <form method="POST" class="checklist-form-layout">
   <section class="card checklist-header-card">
     <div class="detail-header">
@@ -8,74 +41,31 @@ block page_title %}{{ modelo.nome }}{% endblock %} {% block page_description
         <span class="pill">Checklist digital</span>
         <h3>{{ modelo.nome }}</h3>
       </div>
-      <a
-        class="button button-secondary"
-        href="{{ url_for('checklist_modelos') }}"
-        >Voltar</a
-      >
+      <a class="button button-secondary" href="{{ url_for('checklist_modelos') }}">Voltar</a>
     </div>
 
     <div class="checklist-meta">
       <p><strong>Código:</strong> {{ modelo.codigo or "Sem código" }}</p>
-      <p>
-        <strong>Área padrão:</strong> {{ modelo.area_padrao or "Não informada"
-        }}
-      </p>
-      <p>
-        <strong>Descrição:</strong> {{ modelo.descricao or "Sem descrição" }}
-      </p>
+      <p><strong>Área padrão:</strong> {{ modelo.area_padrao or "Não informada" }}</p>
+      <p><strong>Descrição:</strong> {{ modelo.descricao or "Sem descrição" }}</p>
     </div>
 
     <div class="checklist-header-grid">
       {% for campo in campos_cabecalho %}
       <label>
-        {{ campo.label_campo }} {% if campo.tipo_campo == "data" %}
-        <input
-          type="date"
-          name="{{ campo.nome_campo }}"
-          {%
-          if
-          campo.obrigatorio
-          %}required{%
-          endif
-          %}
-        />
+        {{ campo.label_campo }}
+
+        {% if campo.tipo_campo == "data" %}
+        <input type="date" name="{{ campo.nome_campo }}" {% if campo.obrigatorio %}required{% endif %}>
 
         {% elif campo.tipo_campo == "hora" %}
-        <input
-          type="time"
-          name="{{ campo.nome_campo }}"
-          {%
-          if
-          campo.obrigatorio
-          %}required{%
-          endif
-          %}
-        />
+        <input type="time" name="{{ campo.nome_campo }}" {% if campo.obrigatorio %}required{% endif %}>
 
         {% elif campo.tipo_campo == "texto_longo" %}
-        <textarea
-          name="{{ campo.nome_campo }}"
-          rows="3"
-          {%
-          if
-          campo.obrigatorio
-          %}required{%
-          endif
-          %}
-        ></textarea>
+        <textarea name="{{ campo.nome_campo }}" rows="3" {% if campo.obrigatorio %}required{% endif %}></textarea>
 
         {% else %}
-        <input
-          type="text"
-          name="{{ campo.nome_campo }}"
-          {%
-          if
-          campo.obrigatorio
-          %}required{%
-          endif
-          %}
-        />
+        <input type="text" name="{{ campo.nome_campo }}" {% if campo.obrigatorio %}required{% endif %}>
         {% endif %}
       </label>
       {% endfor %}
@@ -83,126 +73,154 @@ block page_title %}{{ modelo.nome }}{% endblock %} {% block page_description
   </section>
 
   {% for secao in secoes %}
-  <section class="card checklist-section-card">
-    <div class="section-title-row">
-      <h3>{{ secao.titulo }}</h3>
-      <span class="pill">{{ secao.tipo_secao }}</span>
-    </div>
+    {% set itens_ordenados = secao.itens|sort(attribute='ordem') %}
 
-    {% if secao.tipo_secao == "observacoes_gerais" %}
-    <div class="table-wrap">
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>Item</th>
-            <th>Chamado</th>
-            <th>Descrição do problema</th>
-            <th>Resolvido</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for item in secao.itens|sort(attribute='ordem') %}
-          <tr>
-            <td data-label="Item">{{ item.numero_item or "-" }}</td>
-            <td data-label="Chamado">
-              <input type="text" name="item_{{ item.id }}_chamado" />
-            </td>
-            <td data-label="Descrição do problema">
-              <textarea
-                name="item_{{ item.id }}_descricao_problema"
-                rows="2"
-              ></textarea>
-            </td>
-            <td data-label="Resolvido">
-              <select name="item_{{ item.id }}_resolvido">
-                <option value=""></option>
-                <option value="Sim">Sim</option>
-                <option value="Não">Não</option>
-              </select>
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
+    <section class="card checklist-section-card">
+      <div class="section-title-row">
+        <h3>
+          {% if secao.tipo_secao == "observacoes_gerais" %}
+            Observações gerais
+          {% else %}
+            {{ secao.titulo }}
+          {% endif %}
+        </h3>
+        <span class="pill">{{ secao.tipo_secao }}</span>
+      </div>
 
-    {% else %}
-    <div class="table-wrap">
-      <table class="data-table checklist-compact-table">
-        <thead>
-          <tr>
-            <th>Item</th>
-            <th>Descrição</th>
-            <th>Status</th>
-            <th>Leituras</th>
-            <th>Observação</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for item in secao.itens|sort(attribute='ordem') %}
-          <tr>
-            <td data-label="Item">
-              <span class="item-badge">{{ item.numero_item or "-" }}</span>
-            </td>
+      {% if secao.tipo_secao == "observacoes_gerais" %}
+      <div class="table-wrap">
+        <table class="data-table checklist-compact-table">
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th>Chamado</th>
+              <th>Descrição do problema</th>
+              <th>Resolvido</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in itens_ordenados %}
+            {% set historico = historico_observacoes.get(item.id) %}
+            <tr class="{% if historico %}pendencia-anterior-row{% endif %}">
+              <td data-label="Item">
+                <span class="item-badge">{{ item.numero_item or "-" }}</span>
+                {% if historico %}
+                <div class="pendencia-badge">Pendência anterior</div>
+                {% endif %}
+              </td>
 
-            <td data-label="Descrição">
-              <div class="item-description">{{ item.descricao }}</div>
-            </td>
+              <td data-label="Chamado">
+                <input type="text" name="item_{{ item.id }}_chamado" class="form-control"
+                  value="{{ historico['chamado'] if historico else '' }}">
+              </td>
 
-            <td data-label="Status">
-              <div class="status-choice-group">
-                <label class="status-choice">
-                  <input
-                    type="radio"
-                    name="item_{{ item.id }}_status"
-                    value="Normal"
-                  />
-                  <span>Normal</span>
-                </label>
+              <td data-label="Descrição do problema">
+                <textarea
+                  name="item_{{ item.id }}_descricao_problema"
+                  class="form-control obs-descricao"
+                  data-item-id="{{ item.id }}"
+                  rows="3"
+                >{{ historico['descricao_problema'] if historico else '' }}</textarea>
+                {% if historico %}
+                <small class="pendencia-ajuda">Preenchido automaticamente com base na última pendência em aberto.</small>
+                {% endif %}
+              </td>
 
-                <label class="status-choice">
-                  <input
-                    type="radio"
-                    name="item_{{ item.id }}_status"
-                    value="Anormal"
-                  />
-                  <span>Anormal</span>
-                </label>
-              </div>
-            </td>
+              <td data-label="Resolvido">
+                <select
+                  name="item_{{ item.id }}_resolvido"
+                  class="form-control obs-resolvido"
+                  data-item-id="{{ item.id }}"
+                >
+                  <option value="" {% if not historico %}selected{% endif %}>Selecione</option>
+                  <option value="sim">Sim</option>
+                  <option value="nao" {% if historico and historico['resolvido'] == 'nao' %}selected{% endif %}>Não</option>
+                </select>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
 
-            <td data-label="Leituras">
-              <div class="rst-grid">
-                <label>
-                  <small>R</small>
-                  <input type="text" name="item_{{ item.id }}_r" />
-                </label>
+      {% else %}
+      <div class="table-wrap">
+        <table class="data-table checklist-compact-table">
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th>Descrição</th>
+              <th>Status</th>
+              <th>Leituras</th>
+              <th>Observação</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in itens_ordenados %}
+            <tr>
+              <td data-label="Item">
+                <span class="item-badge">{{ item.numero_item or "-" }}</span>
+              </td>
 
-                <label>
-                  <small>S</small>
-                  <input type="text" name="item_{{ item.id }}_s" />
-                </label>
+              <td data-label="Descrição">
+                <div class="item-description">{{ item.descricao }}</div>
+              </td>
 
-                <label>
-                  <small>T</small>
-                  <input type="text" name="item_{{ item.id }}_t" />
-                </label>
-              </div>
-            </td>
+              <td data-label="Status">
+                {% if item.usa_normal_anormal %}
+                <div class="status-choice-group">
+                  <label class="status-choice">
+                    <input type="radio" name="item_{{ item.id }}_status" value="Normal">
+                    <span>Normal</span>
+                  </label>
 
-            <td data-label="Observação">
-              <textarea
-                name="item_{{ item.id }}_observacao"
-                rows="2"
-              ></textarea>
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-    {% endif %}
-  </section>
+                  <label class="status-choice">
+                    <input type="radio" name="item_{{ item.id }}_status" value="Anormal">
+                    <span>Anormal</span>
+                  </label>
+                </div>
+                {% else %}
+                <span>-</span>
+                {% endif %}
+              </td>
+
+              <td data-label="Leituras">
+                {% if item.usa_valores_rst %}
+                <div class="rst-grid">
+                  <label>
+                    <small>R</small>
+                    <input type="text" name="item_{{ item.id }}_r">
+                  </label>
+
+                  <label>
+                    <small>S</small>
+                    <input type="text" name="item_{{ item.id }}_s">
+                  </label>
+
+                  <label>
+                    <small>T</small>
+                    <input type="text" name="item_{{ item.id }}_t">
+                  </label>
+                </div>
+                {% else %}
+                <span>-</span>
+                {% endif %}
+              </td>
+
+              <td data-label="Observação">
+                {% if item.usa_observacao %}
+                <textarea name="item_{{ item.id }}_observacao" rows="2"></textarea>
+                {% else %}
+                <span>-</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% endif %}
+    </section>
   {% endfor %}
 
   <section class="form-actions checklist-save-bar">
@@ -210,7 +228,63 @@ block page_title %}{{ modelo.nome }}{% endblock %} {% block page_description
   </section>
 </form>
 
-<a class="button button-secondary" href="{{ url_for('checklist_historico') }}"
-  >Histórico</a
->
+<a class="button button-secondary" href="{{ url_for('checklist_historico') }}">Histórico</a>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const selectsResolvido = document.querySelectorAll(".obs-resolvido");
+
+  function atualizarEstadoDescricao(itemId) {
+    const select = document.querySelector(`.obs-resolvido[data-item-id="${itemId}"]`);
+    const descricao = document.querySelector(`.obs-descricao[data-item-id="${itemId}"]`);
+
+    if (!select || !descricao) return;
+
+    const valor = select.value.trim().toLowerCase();
+
+    if (valor === "sim") {
+      descricao.value = "";
+      descricao.required = false;
+      descricao.disabled = true;
+    } else if (valor === "nao") {
+      descricao.disabled = false;
+      descricao.required = true;
+    } else {
+      descricao.disabled = false;
+      descricao.required = false;
+    }
+  }
+
+  selectsResolvido.forEach((select) => {
+    const itemId = select.dataset.itemId;
+    atualizarEstadoDescricao(itemId);
+
+    select.addEventListener("change", function () {
+      atualizarEstadoDescricao(itemId);
+    });
+  });
+
+  const form = document.querySelector("form");
+  if (form) {
+    form.addEventListener("submit", function (e) {
+      for (const select of document.querySelectorAll(".obs-resolvido")) {
+        const itemId = select.dataset.itemId;
+        const descricao = document.querySelector(`.obs-descricao[data-item-id="${itemId}"]`);
+        const valor = select.value.trim().toLowerCase();
+
+        if (valor === "nao" && descricao && !descricao.value.trim()) {
+          alert("Quando marcar 'Não' em Resolvido, a descrição do problema é obrigatória.");
+          descricao.focus();
+          e.preventDefault();
+          return;
+        }
+
+        if (valor === "sim" && descricao) {
+          descricao.value = "";
+        }
+      }
+    });
+  }
+});
+</script>
 {% endblock %}

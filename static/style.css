@@ -267,6 +267,12 @@ body.no-sidebar {
   color: var(--text);
 }
 
+.button-danger {
+  background: var(--panel);
+  border: 1px solid rgba(220, 38, 38, 0.3);
+  color: #b91c1c;
+}
+
 .pill {
   display: inline-flex;
   padding: 8px 12px;
@@ -276,6 +282,24 @@ body.no-sidebar {
   color: var(--primary);
   font-size: 0.82rem;
   font-weight: 600;
+}
+
+.pill-success {
+  background: rgba(15, 159, 110, 0.12);
+  border-color: rgba(15, 159, 110, 0.22);
+  color: #0f9f6e;
+}
+
+.pill-danger {
+  background: rgba(220, 38, 38, 0.1);
+  border-color: rgba(220, 38, 38, 0.2);
+  color: #b91c1c;
+}
+
+.pill-warning {
+  background: rgba(245, 158, 11, 0.12);
+  border-color: rgba(245, 158, 11, 0.22);
+  color: #b45309;
 }
 
 .record-list,

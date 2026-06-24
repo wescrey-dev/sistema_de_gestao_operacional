@@ -1,0 +1,167 @@
+{% extends 'base.html' %}
+{% block title %}{{ 'Editar levantamento' if levantamento else 'Levantamento de Materiais' }}{% endblock %}
+{% block page_title %}{{ 'Editar levantamento #' ~ levantamento.id if levantamento else 'Levantamento de Materiais' }}{% endblock %}
+{% block page_description %}
+{% if levantamento %}
+Ajuste a atividade ou os materiais deste levantamento, que ainda está pendente de análise.
+{% else %}
+Liste os materiais necessários para a atividade. Um supervisor irá analisar antes da compra/retirada.
+{% endif %}
+{% endblock %}
+{% block content %}
+<form method="POST" action="{{ url_for('materiais_editar', levantamento_id=levantamento.id) if levantamento else url_for('materiais') }}" class="card form-shell safety-form materiais-form">
+  <section class="form-section">
+    <h3>Identificação da atividade</h3>
+    <div class="form-grid">
+      <label>
+        Atividade / Serviço
+        <input type="text" name="atividade" placeholder="Ex: Manutenção da linha 3" value="{{ levantamento.atividade if levantamento else '' }}" required>
+      </label>
+      <label>
+        Nº da OM (opcional)
+        <input type="text" name="numero_om" value="{{ levantamento.numero_om if levantamento else '' }}">
+      </label>
+      <label>
+        Solicitante
+        <input type="text" name="solicitante" value="{{ levantamento.solicitante if levantamento else usuario_nome }}" required>
+      </label>
+    </div>
+    <label>
+      Observação geral (opcional)
+      <textarea name="observacao" rows="3" placeholder="Algum detalhe importante sobre o levantamento...">{{ levantamento.observacao if levantamento else '' }}</textarea>
+    </label>
+  </section>
+
+  <section class="form-section">
+    <h3>Materiais necessários</h3>
+    <div class="table-wrap safety-table-wrap">
+      <table class="data-table safety-mobile-table" id="materiais-table">
+        <thead>
+          <tr>
+            <th>Material</th>
+            <th>Quantidade</th>
+            <th>Unidade</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="materiais-tbody">
+          {% if levantamento and levantamento.itens %}
+          {% for item in levantamento.itens %}
+          <tr class="materiais-row">
+            <td data-label="Material">
+              <input type="text" name="item_material[]" placeholder="Ex: Parafuso M8" value="{{ item.material }}" required>
+            </td>
+            <td data-label="Quantidade">
+              <input type="number" name="item_quantidade[]" min="0" step="0.01" value="{{ item.quantidade }}" required>
+            </td>
+            <td data-label="Unidade">
+              <select name="item_unidade[]">
+                <option value=""></option>
+                {% for u in unidades %}
+                <option {{ 'selected' if item.unidade == u else '' }}>{{ u }}</option>
+                {% endfor %}
+              </select>
+            </td>
+            <td data-label="">
+              <button type="button" class="button button-secondary materiais-remove-row">Remover</button>
+            </td>
+          </tr>
+          {% endfor %}
+          {% else %}
+          <tr class="materiais-row">
+            <td data-label="Material">
+              <input type="text" name="item_material[]" placeholder="Ex: Parafuso M8" required>
+            </td>
+            <td data-label="Quantidade">
+              <input type="number" name="item_quantidade[]" min="0" step="0.01" required>
+            </td>
+            <td data-label="Unidade">
+              <select name="item_unidade[]">
+                <option value=""></option>
+                {% for u in unidades %}
+                <option>{{ u }}</option>
+                {% endfor %}
+              </select>
+            </td>
+            <td data-label="">
+              <button type="button" class="button button-secondary materiais-remove-row">Remover</button>
+            </td>
+          </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="form-actions" style="justify-content: flex-start; margin-top: 14px;">
+      <button type="button" class="button button-secondary" id="materiais-add-row">+ Adicionar material</button>
+    </div>
+  </section>
+
+  <div class="form-actions safety-save-actions">
+    <button class="button" type="submit">{{ 'Salvar alterações' if levantamento else 'Enviar para análise' }}</button>
+    {% if levantamento %}
+    <a class="button button-secondary" href="{{ url_for('materiais_detalhe', levantamento_id=levantamento.id) }}">Cancelar edição</a>
+    {% endif %}
+  </div>
+</form>
+
+<template id="materiais-row-template">
+  <tr class="materiais-row">
+    <td data-label="Material">
+      <input type="text" name="item_material[]" placeholder="Ex: Parafuso M8">
+    </td>
+    <td data-label="Quantidade">
+      <input type="number" name="item_quantidade[]" min="0" step="0.01">
+    </td>
+    <td data-label="Unidade">
+      <select name="item_unidade[]">
+        <option value=""></option>
+        {% for u in unidades %}
+        <option>{{ u }}</option>
+        {% endfor %}
+      </select>
+    </td>
+    <td data-label="">
+      <button type="button" class="button button-secondary materiais-remove-row">Remover</button>
+    </td>
+  </tr>
+</template>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const tbody = document.getElementById("materiais-tbody");
+    const template = document.getElementById("materiais-row-template");
+    const addButton = document.getElementById("materiais-add-row");
+
+    function attachRemoveHandler(row) {
+      const removeBtn = row.querySelector(".materiais-remove-row");
+      removeBtn.addEventListener("click", function () {
+        if (tbody.querySelectorAll(".materiais-row").length > 1) {
+          row.remove();
+        } else {
+          row.querySelectorAll("input").forEach((el) => (el.value = ""));
+          row.querySelectorAll("select").forEach((el) => (el.value = ""));
+        }
+      });
+    }
+
+    addButton.addEventListener("click", function () {
+      const clone = template.content.cloneNode(true);
+      const row = clone.querySelector(".materiais-row");
+      tbody.appendChild(row);
+      attachRemoveHandler(row);
+
+      const select = row.querySelector("select");
+      if (select && window.TomSelect) {
+        new TomSelect(select, {
+          create: false,
+          allowEmptyOption: true,
+          dropdownParent: "body",
+        });
+      }
+    });
+
+    tbody.querySelectorAll(".materiais-row").forEach(attachRemoveHandler);
+  });
+</script>
+{% endblock %}

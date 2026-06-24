@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+{% block title %}Levantamento #{{ levantamento.id }}{% endblock %}
+{% block page_title %}Levantamento #{{ levantamento.id }}{% endblock %}
+{% block page_description %}Detalhes do levantamento de materiais.{% endblock %}
+{% block content %}
+
+<section class="card panel-pad">
+  <div class="record-header">
+    <span class="pill">MATERIAIS</span>
+    {% if levantamento.status == "Aprovado" %}
+    <span class="pill pill-success">Aprovado</span>
+    {% elif levantamento.status == "Rejeitado" %}
+    <span class="pill pill-danger">Rejeitado</span>
+    {% elif levantamento.status == "Cancelado" %}
+    <span class="pill pill-danger">Cancelado</span>
+    {% else %}
+    <span class="pill pill-warning">Pendente</span>
+    {% endif %}
+  </div>
+
+  {% if levantamento.numero_reserva %}
+  <p class="muted" style="margin-top: 6px;"><strong>Nº da reserva:</strong> {{ levantamento.numero_reserva }}</p>
+  {% endif %}
+
+  <div class="record-details" style="margin-top: 16px;">
+    <p><strong>Atividade:</strong> {{ levantamento.atividade }}</p>
+    <p><strong>Nº da OM:</strong> {{ levantamento.numero_om or "Não informada" }}</p>
+    <p><strong>Solicitante:</strong> {{ levantamento.solicitante }}</p>
+    <p><strong>Criado em:</strong> {{ levantamento.criado_em.strftime("%d/%m/%Y %H:%M:%S") }}</p>
+    <p><strong>Criado por:</strong> {{ levantamento.usuario.nome if levantamento.usuario else "Não informado" }}</p>
+  </div>
+
+  {% if levantamento.observacao %}
+  <div class="record-note" style="margin-top: 16px;">
+    <strong>Observação do solicitante</strong>
+    <p>{{ levantamento.observacao }}</p>
+  </div>
+  {% endif %}
+
+  {% if pode_editar %}
+  <div class="form-actions" style="justify-content: flex-start; gap: 12px; margin-top: 16px;">
+    <a class="button button-secondary" href="{{ url_for('materiais_editar', levantamento_id=levantamento.id) }}">Editar</a>
+    <form method="POST" action="{{ url_for('materiais_cancelar', levantamento_id=levantamento.id) }}" onsubmit="return confirm('Cancelar este levantamento? Essa ação não pode ser desfeita.');">
+      <button type="submit" class="button button-danger">Cancelar levantamento</button>
+    </form>
+  </div>
+  {% endif %}
+</section>
+
+<section class="card panel-pad" style="margin-top: 16px;">
+  <h3 style="margin-top: 0;">Materiais solicitados</h3>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Material</th>
+          <th>Quantidade</th>
+          <th>Unidade</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in levantamento.itens %}
+        <tr>
+          <td>{{ item.material }}</td>
+          <td>{{ item.quantidade }}</td>
+          <td>{{ item.unidade or "-" }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="3" class="muted">Nenhum item informado.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+{% if levantamento.status != "Pendente" %}
+<section class="card panel-pad" style="margin-top: 16px;">
+  <h3 style="margin-top: 0;">Análise</h3>
+  <div class="record-details">
+    <p>
+      <strong>Decisão:</strong> {{ levantamento.status }}
+    </p>
+    <p>
+      <strong>Analisado por:</strong> {{ levantamento.analisado_por.nome if levantamento.analisado_por else "Não informado" }}
+    </p>
+    <p>
+      <strong>Analisado em:</strong> {{ levantamento.analisado_em.strftime("%d/%m/%Y %H:%M:%S") if levantamento.analisado_em else "Não informado" }}
+    </p>
+    {% if levantamento.numero_reserva %}
+    <p>
+      <strong>Nº da reserva:</strong> {{ levantamento.numero_reserva }}
+    </p>
+    {% endif %}
+  </div>
+  {% if levantamento.observacao_analise %}
+  <div class="record-note">
+    <strong>Observação da análise</strong>
+    <p>{{ levantamento.observacao_analise }}</p>
+  </div>
+  {% endif %}
+</section>
+{% elif session.get("usuario_perfil") in ["admin", "supervisor"] %}
+<section class="card panel-pad form-shell" style="margin-top: 16px;">
+  <h3 style="margin-top: 0;">Analisar levantamento</h3>
+  <form method="POST" action="{{ url_for('materiais_analisar', levantamento_id=levantamento.id) }}" id="form-analisar-materiais">
+    <label>
+      Nº da reserva <span class="muted">(obrigatório para aprovar)</span>
+      <input type="text" name="numero_reserva" placeholder="Ex: RES-12345">
+    </label>
+    <label style="margin-top: 12px; display: block;">
+      Observação (opcional)
+      <textarea name="observacao_analise" rows="3" placeholder="Justificativa, ajustes solicitados, etc."></textarea>
+    </label>
+    <div class="form-actions" style="justify-content: flex-start; gap: 12px; margin-top: 16px;">
+      <button type="submit" name="decisao" value="Aprovado" class="button">Aprovar</button>
+      <button type="submit" name="decisao" value="Rejeitado" class="button button-danger">Rejeitar</button>
+    </div>
+  </form>
+</section>
+<script>
+  document.getElementById("form-analisar-materiais").addEventListener("submit", function (event) {
+    const decisaoClicada = event.submitter ? event.submitter.value : null;
+    const numeroReserva = this.querySelector("input[name='numero_reserva']").value.trim();
+    if (decisaoClicada === "Aprovado" && !numeroReserva) {
+      event.preventDefault();
+      alert("Informe o número da reserva para aprovar o levantamento.");
+    }
+  });
+</script>
+{% else %}
+<section class="card panel-pad" style="margin-top: 16px;">
+  <p class="muted">Este levantamento ainda está pendente de análise por um supervisor.</p>
+</section>
+{% endif %}
+
+<div class="form-actions" style="justify-content: flex-start; margin-top: 16px;">
+  <a class="button button-secondary" href="{{ url_for('materiais_historico') }}">Voltar para o histórico</a>
+</div>
+
+{% endblock %}

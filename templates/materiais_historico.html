@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+{% block title %}Levantamentos de Materiais{% endblock %}
+{% block page_title %}Levantamentos de Materiais{% endblock %}
+{% block page_description %}
+{% if session.get("usuario_perfil") in ["admin", "supervisor"] %}
+Acompanhe e analise os levantamentos enviados pela equipe.
+{% else %}
+Acompanhe o status dos seus levantamentos enviados.
+{% endif %}
+{% endblock %}
+{% block content %}
+
+<section class="card filters-card">
+  <form method="GET" class="filters-form">
+    <div class="filters-grid">
+      <label>
+        Buscar (atividade, OM ou reserva)
+        <input type="text" name="busca" value="{{ busca }}" placeholder="Ex: RES-12345, OM-3461249, projeto Dakota...">
+      </label>
+      <label>
+        Status
+        <select name="status">
+          <option value="" {{ 'selected' if status_filtro == '' else '' }}>Todos</option>
+          {% for s in status_options %}
+          <option value="{{ s }}" {{ 'selected' if status_filtro == s else '' }}>{{ s }}</option>
+          {% endfor %}
+        </select>
+      </label>
+    </div>
+    <div class="filters-actions">
+      <button class="button" type="submit">Aplicar filtro</button>
+      <a class="button button-secondary" href="{{ url_for('materiais_historico') }}">Limpar</a>
+      <a class="button button-secondary" href="{{ url_for('materiais') }}">+ Novo levantamento</a>
+    </div>
+  </form>
+</section>
+
+<section class="records-section">
+  <div class="record-grid">
+    {% for levantamento in levantamentos %}
+    <article class="card record-card">
+      <div class="record-header">
+        <span class="pill">MATERIAIS</span>
+        <strong>#{{ levantamento.id }}</strong>
+      </div>
+
+      <p class="muted">
+        Criado em {{ levantamento.criado_em.strftime("%d/%m/%Y %H:%M:%S") }}
+      </p>
+
+      <div class="record-details">
+        <p><strong>Atividade:</strong> {{ levantamento.atividade }}</p>
+        <p><strong>OM:</strong> {{ levantamento.numero_om or "Não informada" }}</p>
+        <p><strong>Solicitante:</strong> {{ levantamento.solicitante }}</p>
+        <p><strong>Qtd. itens:</strong> {{ levantamento.itens|length }}</p>
+        <p>
+          <strong>Status:</strong>
+          {% if levantamento.status == "Aprovado" %}
+          <span class="pill pill-success">Aprovado</span>
+          {% elif levantamento.status == "Rejeitado" %}
+          <span class="pill pill-danger">Rejeitado</span>
+          {% elif levantamento.status == "Cancelado" %}
+          <span class="pill pill-danger">Cancelado</span>
+          {% else %}
+          <span class="pill pill-warning">Pendente</span>
+          {% endif %}
+        </p>
+        {% if levantamento.numero_reserva %}
+        <p><strong>Nº da reserva:</strong> {{ levantamento.numero_reserva }}</p>
+        {% endif %}
+        <p>
+          <strong>Criado por:</strong> {{ levantamento.usuario.nome if levantamento.usuario else "Não informado" }}
+        </p>
+      </div>
+
+      <div class="form-actions" style="justify-content: flex-start; gap: 10px; margin-top: 14px;">
+        <a class="button button-secondary" href="{{ url_for('materiais_detalhe', levantamento_id=levantamento.id) }}">Ver detalhes</a>
+        {% if levantamento.status == "Pendente" and (session.get("usuario_perfil") in ["admin", "supervisor"] or levantamento.usuario_id == session.get("usuario_id")) %}
+        <a class="button button-secondary" href="{{ url_for('materiais_editar', levantamento_id=levantamento.id) }}">Editar</a>
+        {% endif %}
+      </div>
+    </article>
+    {% else %}
+    <p class="muted">Nenhum levantamento de materiais encontrado.</p>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

@@ -61,6 +61,8 @@ Acompanhe o status dos seus levantamentos enviados.
           <span class="pill pill-danger">Rejeitado</span>
           {% elif levantamento.status == "Cancelado" %}
           <span class="pill pill-danger">Cancelado</span>
+          {% elif levantamento.status == "Pendente de aprovação" %}
+          <span class="pill pill-warning">Pendente de aprovação</span>
           {% else %}
           <span class="pill pill-warning">Pendente</span>
           {% endif %}

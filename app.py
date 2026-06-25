@@ -60,7 +60,7 @@ IPS_CRITICIDADES = ["Leve","Moderado","Crítico"]
 IPS_STATUS = ["OK","Pendente"]
 IPS_ELEMENTOS = ["Engrenagens mecânicas","Carcaça","Manopla","Pintura","Lâminas","Componentes","Botões e parafusos","Mangueiras e mangotes","Manômetros e mostradores","Tampas e hastes","Suportes e travas","Luzes e faróis","Cabo","Escovas e fibras","Limpeza","Estado geral","Circuitos elétricos","Check-list de pré-uso"]
 MATERIAL_UNIDADES = ["UN","PC","KG","M","M²","M³","L","CX","RL","PAR","KIT","SC","GL"]
-MATERIAL_STATUS = ["Pendente","Aprovado","Rejeitado","Cancelado"]
+MATERIAL_STATUS = ["Pendente","Pendente de aprovação","Aprovado","Rejeitado","Cancelado"]
 
 class Usuario(db.Model):
     __tablename__ = "usuarios"
@@ -171,7 +171,7 @@ class LevantamentoMaterial(db.Model):
     numero_om = db.Column(db.String(100))
     solicitante = db.Column(db.String(150), nullable=False)
     observacao = db.Column(db.Text)
-    status = db.Column(db.String(20), nullable=False, default="Pendente")
+    status = db.Column(db.String(30), nullable=False, default="Pendente")
     observacao_analise = db.Column(db.Text)
     numero_reserva = db.Column(db.String(100))
     usuario_id = db.Column(db.Integer, db.ForeignKey("usuarios.id"), nullable=True)
@@ -767,25 +767,33 @@ def materiais_detalhe(levantamento_id):
 def materiais_analisar(levantamento_id):
     levantamento = LevantamentoMaterial.query.get_or_404(levantamento_id)
 
-    if levantamento.status != "Pendente":
-        flash("Este levantamento já foi analisado.", "danger")
-        return redirect(url_for("materiais_detalhe", levantamento_id=levantamento.id))
-
     decisao = request.form.get("decisao")
     observacao_analise = request.form.get("observacao_analise", "").strip()
     numero_reserva = request.form.get("numero_reserva", "").strip()
 
-    if decisao not in ["Aprovado", "Rejeitado"]:
+    decisoes_validas = ["Pendente de aprovação", "Aprovado", "Rejeitado"]
+    if decisao not in decisoes_validas:
         flash("Decisão inválida.", "danger")
         return redirect(url_for("materiais_detalhe", levantamento_id=levantamento.id))
 
-    if decisao == "Aprovado" and not numero_reserva:
-        flash("Informe o número da reserva para aprovar o levantamento.", "danger")
+    # Do status "Pendente" inicial só se pode avançar para "Pendente de aprovação"
+    # (é nesse passo que a reserva é informada por primeira vez).
+    if levantamento.status == "Pendente" and decisao != "Pendente de aprovação":
+        flash("Informe o número da reserva para colocar em análise antes de aprovar ou rejeitar.", "danger")
+        return redirect(url_for("materiais_detalhe", levantamento_id=levantamento.id))
+
+    # Levantamentos já cancelados não voltam a ser analisados por aqui.
+    if levantamento.status == "Cancelado":
+        flash("Este levantamento foi cancelado e não pode mais ser analisado.", "danger")
+        return redirect(url_for("materiais_detalhe", levantamento_id=levantamento.id))
+
+    if not numero_reserva:
+        flash("Informe o número da reserva.", "danger")
         return redirect(url_for("materiais_detalhe", levantamento_id=levantamento.id))
 
     levantamento.status = decisao
     levantamento.observacao_analise = observacao_analise
-    levantamento.numero_reserva = numero_reserva or None
+    levantamento.numero_reserva = numero_reserva
     levantamento.analisado_por_id = session.get("usuario_id")
     levantamento.analisado_em = datetime.utcnow()
 

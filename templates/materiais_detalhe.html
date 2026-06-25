@@ -13,6 +13,8 @@
     <span class="pill pill-danger">Rejeitado</span>
     {% elif levantamento.status == "Cancelado" %}
     <span class="pill pill-danger">Cancelado</span>
+    {% elif levantamento.status == "Pendente de aprovação" %}
+    <span class="pill pill-warning">Pendente de aprovação</span>
     {% else %}
     <span class="pill pill-warning">Pendente</span>
     {% endif %}
@@ -73,23 +75,74 @@
   </div>
 </section>
 
-{% if levantamento.status != "Pendente" %}
+{% if levantamento.status == "Cancelado" %}
+<section class="card panel-pad" style="margin-top: 16px;">
+  <h3 style="margin-top: 0;">Análise</h3>
+  <p class="muted">Este levantamento foi cancelado pelo solicitante e não está mais em análise.</p>
+</section>
+
+{% elif session.get("usuario_perfil") in ["admin", "supervisor"] %}
+<section class="card panel-pad form-shell" style="margin-top: 16px;">
+  <h3 style="margin-top: 0;">Analisar levantamento</h3>
+
+  {% if levantamento.status != "Pendente" %}
+  <div class="record-details" style="margin-bottom: 16px;">
+    <p><strong>Última atualização:</strong> {{ levantamento.status }}</p>
+    <p><strong>Analisado por:</strong> {{ levantamento.analisado_por.nome if levantamento.analisado_por else "Não informado" }}</p>
+    <p><strong>Analisado em:</strong> {{ levantamento.analisado_em.strftime("%d/%m/%Y %H:%M:%S") if levantamento.analisado_em else "Não informado" }}</p>
+  </div>
+  {% if levantamento.observacao_analise %}
+  <div class="record-note" style="margin-bottom: 16px;">
+    <strong>Observação da análise</strong>
+    <p>{{ levantamento.observacao_analise }}</p>
+  </div>
+  {% endif %}
+  {% endif %}
+
+  <form method="POST" action="{{ url_for('materiais_analisar', levantamento_id=levantamento.id) }}" id="form-analisar-materiais">
+    <label>
+      Nº da reserva <span class="muted">(obrigatório)</span>
+      <input type="text" name="numero_reserva" value="{{ levantamento.numero_reserva or '' }}" placeholder="Ex: RES-12345">
+    </label>
+    <label style="margin-top: 12px; display: block;">
+      Observação (opcional)
+      <textarea name="observacao_analise" rows="3" placeholder="Justificativa, ajustes solicitados, etc.">{{ levantamento.observacao_analise or '' }}</textarea>
+    </label>
+    <div class="form-actions" style="justify-content: flex-start; gap: 12px; margin-top: 16px; flex-wrap: wrap;">
+      {% if levantamento.status == "Pendente" %}
+      <button type="submit" name="decisao" value="Pendente de aprovação" class="button">Marcar pendente de aprovação</button>
+      {% else %}
+      <button type="submit" name="decisao" value="Pendente de aprovação" class="button button-secondary">Pendente de aprovação</button>
+      <button type="submit" name="decisao" value="Aprovado" class="button">Aprovar</button>
+      <button type="submit" name="decisao" value="Rejeitado" class="button button-danger">Rejeitar</button>
+      {% endif %}
+    </div>
+  </form>
+</section>
+<script>
+  document.getElementById("form-analisar-materiais").addEventListener("submit", function (event) {
+    const numeroReserva = this.querySelector("input[name='numero_reserva']").value.trim();
+    if (!numeroReserva) {
+      event.preventDefault();
+      alert("Informe o número da reserva.");
+    }
+  });
+</script>
+
+{% elif levantamento.status == "Pendente" %}
+<section class="card panel-pad" style="margin-top: 16px;">
+  <p class="muted">Este levantamento ainda está pendente de análise por um supervisor.</p>
+</section>
+
+{% else %}
 <section class="card panel-pad" style="margin-top: 16px;">
   <h3 style="margin-top: 0;">Análise</h3>
   <div class="record-details">
-    <p>
-      <strong>Decisão:</strong> {{ levantamento.status }}
-    </p>
-    <p>
-      <strong>Analisado por:</strong> {{ levantamento.analisado_por.nome if levantamento.analisado_por else "Não informado" }}
-    </p>
-    <p>
-      <strong>Analisado em:</strong> {{ levantamento.analisado_em.strftime("%d/%m/%Y %H:%M:%S") if levantamento.analisado_em else "Não informado" }}
-    </p>
+    <p><strong>Status:</strong> {{ levantamento.status }}</p>
+    <p><strong>Analisado por:</strong> {{ levantamento.analisado_por.nome if levantamento.analisado_por else "Não informado" }}</p>
+    <p><strong>Analisado em:</strong> {{ levantamento.analisado_em.strftime("%d/%m/%Y %H:%M:%S") if levantamento.analisado_em else "Não informado" }}</p>
     {% if levantamento.numero_reserva %}
-    <p>
-      <strong>Nº da reserva:</strong> {{ levantamento.numero_reserva }}
-    </p>
+    <p><strong>Nº da reserva:</strong> {{ levantamento.numero_reserva }}</p>
     {% endif %}
   </div>
   {% if levantamento.observacao_analise %}
@@ -98,38 +151,6 @@
     <p>{{ levantamento.observacao_analise }}</p>
   </div>
   {% endif %}
-</section>
-{% elif session.get("usuario_perfil") in ["admin", "supervisor"] %}
-<section class="card panel-pad form-shell" style="margin-top: 16px;">
-  <h3 style="margin-top: 0;">Analisar levantamento</h3>
-  <form method="POST" action="{{ url_for('materiais_analisar', levantamento_id=levantamento.id) }}" id="form-analisar-materiais">
-    <label>
-      Nº da reserva <span class="muted">(obrigatório para aprovar)</span>
-      <input type="text" name="numero_reserva" placeholder="Ex: RES-12345">
-    </label>
-    <label style="margin-top: 12px; display: block;">
-      Observação (opcional)
-      <textarea name="observacao_analise" rows="3" placeholder="Justificativa, ajustes solicitados, etc."></textarea>
-    </label>
-    <div class="form-actions" style="justify-content: flex-start; gap: 12px; margin-top: 16px;">
-      <button type="submit" name="decisao" value="Aprovado" class="button">Aprovar</button>
-      <button type="submit" name="decisao" value="Rejeitado" class="button button-danger">Rejeitar</button>
-    </div>
-  </form>
-</section>
-<script>
-  document.getElementById("form-analisar-materiais").addEventListener("submit", function (event) {
-    const decisaoClicada = event.submitter ? event.submitter.value : null;
-    const numeroReserva = this.querySelector("input[name='numero_reserva']").value.trim();
-    if (decisaoClicada === "Aprovado" && !numeroReserva) {
-      event.preventDefault();
-      alert("Informe o número da reserva para aprovar o levantamento.");
-    }
-  });
-</script>
-{% else %}
-<section class="card panel-pad" style="margin-top: 16px;">
-  <p class="muted">Este levantamento ainda está pendente de análise por um supervisor.</p>
 </section>
 {% endif %}
 

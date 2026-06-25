@@ -1,0 +1,409 @@
+--- app.py.bak	2026-06-20 22:06:05.539025826 +0000
++++ app.py	2026-06-25 09:25:57.919611249 +0000
+@@ -10,18 +10,31 @@
+ import os
+ 
+ app = Flask(__name__)
+-app.secret_key = os.getenv("SECRET_KEY", "seguranca-secret-key")
++_secret_key = os.getenv("SECRET_KEY")
++if not _secret_key:
++    print("AVISO: SECRET_KEY não configurada. Usando valor de desenvolvimento — configure SECRET_KEY antes de ir para produção.")
++    _secret_key = "seguranca-secret-key-dev-apenas"
++app.secret_key = _secret_key
+ 
+ DB_MODE = os.getenv("DB_MODE", "mysql").lower()
+ 
+ if DB_MODE == "sqlite":
+     app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///banco_local.db"
++elif os.getenv("MYSQL_URL"):
++    # Railway expõe a connection string pronta em MYSQL_URL.
++    # SQLAlchemy precisa do driver pymysql explícito no scheme.
++    db_url = os.getenv("MYSQL_URL")
++    if db_url.startswith("mysql://"):
++        db_url = db_url.replace("mysql://", "mysql+pymysql://", 1)
++    app.config["SQLALCHEMY_DATABASE_URI"] = db_url
+ else:
+-    DB_USER = os.getenv("MYSQL_USER", "root")
+-    DB_PASSWORD = quote_plus(os.getenv("MYSQL_PASSWORD", "SUA_SENHA_AQUI"))
+-    DB_HOST = os.getenv("MYSQL_HOST", "localhost")
+-    DB_PORT = os.getenv("MYSQL_PORT", "3306")
+-    DB_NAME = os.getenv("MYSQL_DB", "sistema_seguranca")
++    # Aceita tanto o padrão local (.env com underscore) quanto o padrão
++    # que o Railway usa nas variáveis do serviço MySQL (sem underscore).
++    DB_USER = os.getenv("MYSQL_USER") or os.getenv("MYSQLUSER", "root")
++    DB_PASSWORD = quote_plus(os.getenv("MYSQL_PASSWORD") or os.getenv("MYSQLPASSWORD", "SUA_SENHA_AQUI"))
++    DB_HOST = os.getenv("MYSQL_HOST") or os.getenv("MYSQLHOST", "localhost")
++    DB_PORT = os.getenv("MYSQL_PORT") or os.getenv("MYSQLPORT", "3306")
++    DB_NAME = os.getenv("MYSQL_DB") or os.getenv("MYSQLDATABASE", "sistema_seguranca")
+ 
+     app.config["SQLALCHEMY_DATABASE_URI"] = (
+         f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+@@ -46,6 +59,8 @@
+ IPS_CRITICIDADES = ["Leve","Moderado","Crítico"]
+ IPS_STATUS = ["OK","Pendente"]
+ IPS_ELEMENTOS = ["Engrenagens mecânicas","Carcaça","Manopla","Pintura","Lâminas","Componentes","Botões e parafusos","Mangueiras e mangotes","Manômetros e mostradores","Tampas e hastes","Suportes e travas","Luzes e faróis","Cabo","Escovas e fibras","Limpeza","Estado geral","Circuitos elétricos","Check-list de pré-uso"]
++MATERIAL_UNIDADES = ["UN","PC","KG","M","M²","M³","L","CX","RL","PAR","KIT","SC","GL"]
++MATERIAL_STATUS = ["Pendente","Pendente de aprovação","Aprovado","Rejeitado","Cancelado"]
+ 
+ class Usuario(db.Model):
+     __tablename__ = "usuarios"
+@@ -70,8 +85,10 @@
+     numero_pessoas = db.Column(db.Integer)
+     status_opai = db.Column(db.String(50))
+     comportamentos_positivos = db.Column(db.Text)
++    usuario_id = db.Column(db.Integer, db.ForeignKey("usuarios.id"), nullable=True)
+     criado_em = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+     desvios = db.relationship("OPAIDesvio", backref="opai", cascade="all, delete-orphan", lazy=True)
++    usuario = db.relationship("Usuario", foreign_keys=[usuario_id])
+ 
+ class OPAIDesvio(db.Model):
+     __tablename__ = "opai_desvios"
+@@ -99,8 +116,10 @@
+     desvio_tratado = db.Column(db.String(10))
+     outros_texto = db.Column(db.Text)
+     acao_outro_texto = db.Column(db.Text)
++    usuario_id = db.Column(db.Integer, db.ForeignKey("usuarios.id"), nullable=True)
+     criado_em = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+     itens = db.relationship("APItem", backref="ap", cascade="all, delete-orphan", lazy=True)
++    usuario = db.relationship("Usuario", foreign_keys=[usuario_id])
+ 
+ class APItem(db.Model):
+     __tablename__ = "ap_itens"
+@@ -125,8 +144,10 @@
+     quantidade_desvios = db.Column(db.Integer, nullable=False, default=0)
+     quantidade_acoes_propostas = db.Column(db.Integer, nullable=False, default=0)
+     quantidade_acoes_concluidas = db.Column(db.Integer, nullable=False, default=0)
++    usuario_id = db.Column(db.Integer, db.ForeignKey("usuarios.id"), nullable=True)
+     criado_em = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+     itens = db.relationship("IPSItem", backref="ips", cascade="all, delete-orphan", lazy=True)
++    usuario = db.relationship("Usuario", foreign_keys=[usuario_id])
+ 
+ class IPSItem(db.Model):
+     __tablename__ = "ips_itens"
+@@ -141,7 +162,47 @@
+     responsavel = db.Column(db.String(150))
+     criado_em = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+ 
+-# checklist
++# materiais
++class LevantamentoMaterial(db.Model):
++    __tablename__ = "levantamentos_material"
++
++    id = db.Column(db.Integer, primary_key=True)
++    atividade = db.Column(db.String(255), nullable=False)
++    numero_om = db.Column(db.String(100))
++    solicitante = db.Column(db.String(150), nullable=False)
++    observacao = db.Column(db.Text)
++    status = db.Column(db.String(30), nullable=False, default="Pendente")
++    observacao_analise = db.Column(db.Text)
++    numero_reserva = db.Column(db.String(100))
++    usuario_id = db.Column(db.Integer, db.ForeignKey("usuarios.id"), nullable=True)
++    analisado_por_id = db.Column(db.Integer, db.ForeignKey("usuarios.id"), nullable=True)
++    criado_em = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
++    analisado_em = db.Column(db.DateTime)
++
++    itens = db.relationship(
++        "LevantamentoMaterialItem",
++        backref="levantamento",
++        cascade="all, delete-orphan",
++        lazy=True
++    )
++    usuario = db.relationship("Usuario", foreign_keys=[usuario_id])
++    analisado_por = db.relationship("Usuario", foreign_keys=[analisado_por_id])
++
++
++class LevantamentoMaterialItem(db.Model):
++    __tablename__ = "levantamentos_material_itens"
++
++    id = db.Column(db.Integer, primary_key=True)
++    levantamento_id = db.Column(
++        db.Integer,
++        db.ForeignKey("levantamentos_material.id", ondelete="CASCADE"),
++        nullable=False
++    )
++    material = db.Column(db.String(255), nullable=False)
++    quantidade = db.Column(db.Numeric(10, 2), nullable=False)
++    unidade = db.Column(db.String(20), nullable=False)
++
++
+ class ChecklistModelo(db.Model):
+     __tablename__ = "checklist_modelos"
+ 
+@@ -548,7 +609,7 @@
+ @login_required
+ def opai():
+     if request.method == "POST":
+-        registro = OPAI(local_observado=request.form.get("local_observado",""), data_opai=to_date(request.form.get("data")), nome_ut=request.form.get("nome_ut",""), numero_ut=request.form.get("numero_ut",""), auditor=request.form.get("auditor",""), re=request.form.get("re",""), equipe_observada=request.form.get("equipe_observada",""), numero_pessoas=int(request.form.get("numero_pessoas")) if request.form.get("numero_pessoas") else None, status_opai=request.form.get("status_opai",""), comportamentos_positivos=request.form.get("comportamentos_positivos",""))
++        registro = OPAI(local_observado=request.form.get("local_observado",""), data_opai=to_date(request.form.get("data")), nome_ut=request.form.get("nome_ut",""), numero_ut=request.form.get("numero_ut",""), auditor=request.form.get("auditor",""), re=request.form.get("re",""), equipe_observada=request.form.get("equipe_observada",""), numero_pessoas=int(request.form.get("numero_pessoas")) if request.form.get("numero_pessoas") else None, status_opai=request.form.get("status_opai",""), comportamentos_positivos=request.form.get("comportamentos_positivos",""), usuario_id=session.get("usuario_id"))
+         seqs = request.form.getlist("desvio_seq[]"); descricoes = request.form.getlist("desvio_descricao[]"); categorias = request.form.getlist("desvio_categoria[]"); subclasses = request.form.getlist("desvio_subclasse[]"); classes = request.form.getlist("desvio_classe[]"); criticidades = request.form.getlist("desvio_criticidade[]"); acoes = request.form.getlist("desvio_acao[]")
+         for i in range(len(descricoes)):
+             if descricoes[i].strip():
+@@ -560,7 +621,7 @@
+ @login_required
+ def ap():
+     if request.method == "POST":
+-        registro = AP(numero_nome_ut=request.form.get("numero_nome_ut",""), data_ocorrencia=to_date(request.form.get("data_ocorrencia")), hora_ocorrencia=to_time(request.form.get("hora_ocorrencia")), emitido_por=request.form.get("emitido_por",""), recebido_por=request.form.get("recebido_por",""), descricao_local=request.form.get("descricao_local",""), criticidade=request.form.get("criticidade",""), desvio_tratado=request.form.get("desvio_tratado",""), outros_texto=request.form.get("outros_texto",""), acao_outro_texto=request.form.get("acao_outro_texto",""))
++        registro = AP(numero_nome_ut=request.form.get("numero_nome_ut",""), data_ocorrencia=to_date(request.form.get("data_ocorrencia")), hora_ocorrencia=to_time(request.form.get("hora_ocorrencia")), emitido_por=request.form.get("emitido_por",""), recebido_por=request.form.get("recebido_por",""), descricao_local=request.form.get("descricao_local",""), criticidade=request.form.get("criticidade",""), desvio_tratado=request.form.get("desvio_tratado",""), outros_texto=request.form.get("outros_texto",""), acao_outro_texto=request.form.get("acao_outro_texto",""), usuario_id=session.get("usuario_id"))
+         grupos = {"area": selected_list("areas"), "equipamento": selected_list("equipamentos"), "procedimento": selected_list("procedimentos"), "ferramenta": selected_list("ferramentas"), "comportamento": selected_list("comportamentos"), "outro": selected_list("outros_marcados"), "acao_imediata": selected_list("acoes_imediatas")}
+         for tipo_item, valores in grupos.items():
+             for valor in valores:
+@@ -572,7 +633,7 @@
+ @login_required
+ def ips():
+     if request.method == "POST":
+-        registro = IPS(data_inspecao=to_date(request.form.get("data")), re=request.form.get("re",""), inspetor=request.form.get("inspetor",""), nome_ut=request.form.get("nome_ut",""), numero_ut=request.form.get("numero_ut",""), identificacao_tag=request.form.get("identificacao_tag",""), funcao=request.form.get("funcao",""), cipeiro=request.form.get("cipeiro",""), funcao_cipeiro=request.form.get("funcao_cipeiro",""))
++        registro = IPS(data_inspecao=to_date(request.form.get("data")), re=request.form.get("re",""), inspetor=request.form.get("inspetor",""), nome_ut=request.form.get("nome_ut",""), numero_ut=request.form.get("numero_ut",""), identificacao_tag=request.form.get("identificacao_tag",""), funcao=request.form.get("funcao",""), cipeiro=request.form.get("cipeiro",""), funcao_cipeiro=request.form.get("funcao_cipeiro",""), usuario_id=session.get("usuario_id"))
+         elementos = request.form.getlist("item_elemento[]"); desvios = request.form.getlist("item_desvio[]"); criticidades = request.form.getlist("item_criticidade[]"); acoes = request.form.getlist("item_acao[]"); prazos = request.form.getlist("item_prazo[]"); status = request.form.getlist("item_status[]"); responsaveis = request.form.getlist("item_responsavel[]")
+         qtd_desvios=qtd_acoes=qtd_concluidas=0
+         for i in range(len(elementos)):
+@@ -585,7 +646,240 @@
+         db.session.add(registro); db.session.commit(); flash("IPS salva com sucesso.", "success"); return redirect(url_for("registros"))
+     return render_template("form_ips.html", elementos=IPS_ELEMENTOS, criticidades=IPS_CRITICIDADES, status_options=IPS_STATUS)
+ 
+-# Rota do checklist
++# Rotas de levantamento de materiais
++@app.route("/materiais", methods=["GET", "POST"])
++@login_required
++def materiais():
++    if request.method == "POST":
++        atividade = request.form.get("atividade", "").strip()
++        numero_om = request.form.get("numero_om", "").strip()
++        solicitante = request.form.get("solicitante", "").strip()
++        observacao = request.form.get("observacao", "").strip()
++
++        materiais_lista = request.form.getlist("item_material[]")
++        quantidades = request.form.getlist("item_quantidade[]")
++        unidades = request.form.getlist("item_unidade[]")
++
++        if not atividade or not solicitante:
++            flash("Preencha a atividade/OM e o solicitante.", "danger")
++            return redirect(url_for("materiais"))
++
++        registro = LevantamentoMaterial(
++            atividade=atividade,
++            numero_om=numero_om,
++            solicitante=solicitante,
++            observacao=observacao,
++            status="Pendente",
++            usuario_id=session.get("usuario_id"),
++        )
++
++        tem_item_valido = False
++        for i in range(len(materiais_lista)):
++            material = materiais_lista[i].strip()
++            quantidade_raw = quantidades[i].strip() if i < len(quantidades) else ""
++            unidade = unidades[i].strip() if i < len(unidades) else ""
++
++            if not material or not quantidade_raw:
++                continue
++
++            try:
++                quantidade = float(quantidade_raw.replace(",", "."))
++            except ValueError:
++                continue
++
++            tem_item_valido = True
++            registro.itens.append(
++                LevantamentoMaterialItem(material=material, quantidade=quantidade, unidade=unidade)
++            )
++
++        if not tem_item_valido:
++            flash("Adicione pelo menos um material válido com quantidade.", "danger")
++            return redirect(url_for("materiais"))
++
++        db.session.add(registro)
++        db.session.commit()
++        flash("Levantamento de materiais enviado para análise.", "success")
++        return redirect(url_for("materiais_historico"))
++
++    return render_template("form_materiais.html", unidades=MATERIAL_UNIDADES)
++
++
++@app.route("/materiais/historico")
++@login_required
++def materiais_historico():
++    query = LevantamentoMaterial.query
++
++    if session.get("usuario_perfil") not in ["admin", "supervisor"]:
++        query = query.filter(LevantamentoMaterial.usuario_id == session.get("usuario_id"))
++
++    status_filtro = request.args.get("status", "").strip()
++    if status_filtro:
++        query = query.filter(LevantamentoMaterial.status == status_filtro)
++
++    busca = request.args.get("busca", "").strip()
++    if busca:
++        termo = f"%{busca}%"
++        query = query.filter(
++            db.or_(
++                LevantamentoMaterial.atividade.ilike(termo),
++                LevantamentoMaterial.numero_om.ilike(termo),
++                LevantamentoMaterial.numero_reserva.ilike(termo),
++            )
++        )
++
++    levantamentos = query.order_by(LevantamentoMaterial.criado_em.desc()).all()
++
++    return render_template(
++        "materiais_historico.html",
++        levantamentos=levantamentos,
++        status_options=MATERIAL_STATUS,
++        status_filtro=status_filtro,
++        busca=busca,
++    )
++
++
++def _pode_editar_levantamento(levantamento):
++    if levantamento.status != "Pendente":
++        return False
++    if session.get("usuario_perfil") in ["admin", "supervisor"]:
++        return True
++    return levantamento.usuario_id == session.get("usuario_id")
++
++
++@app.route("/materiais/<int:levantamento_id>")
++@login_required
++def materiais_detalhe(levantamento_id):
++    levantamento = LevantamentoMaterial.query.get_or_404(levantamento_id)
++
++    if session.get("usuario_perfil") not in ["admin", "supervisor"] and levantamento.usuario_id != session.get("usuario_id"):
++        flash("Você não tem permissão para acessar este levantamento.", "danger")
++        return redirect(url_for("materiais_historico"))
++
++    return render_template(
++        "materiais_detalhe.html",
++        levantamento=levantamento,
++        pode_editar=_pode_editar_levantamento(levantamento),
++    )
++
++
++@app.route("/materiais/<int:levantamento_id>/analisar", methods=["POST"])
++@perfil_required("admin", "supervisor")
++def materiais_analisar(levantamento_id):
++    levantamento = LevantamentoMaterial.query.get_or_404(levantamento_id)
++
++    decisao = request.form.get("decisao")
++    observacao_analise = request.form.get("observacao_analise", "").strip()
++    numero_reserva = request.form.get("numero_reserva", "").strip()
++
++    decisoes_validas = ["Pendente de aprovação", "Aprovado", "Rejeitado"]
++    if decisao not in decisoes_validas:
++        flash("Decisão inválida.", "danger")
++        return redirect(url_for("materiais_detalhe", levantamento_id=levantamento.id))
++
++    # Do status "Pendente" inicial só se pode avançar para "Pendente de aprovação"
++    # (é nesse passo que a reserva é informada por primeira vez).
++    if levantamento.status == "Pendente" and decisao != "Pendente de aprovação":
++        flash("Informe o número da reserva para colocar em análise antes de aprovar ou rejeitar.", "danger")
++        return redirect(url_for("materiais_detalhe", levantamento_id=levantamento.id))
++
++    # Levantamentos já cancelados não voltam a ser analisados por aqui.
++    if levantamento.status == "Cancelado":
++        flash("Este levantamento foi cancelado e não pode mais ser analisado.", "danger")
++        return redirect(url_for("materiais_detalhe", levantamento_id=levantamento.id))
++
++    if not numero_reserva:
++        flash("Informe o número da reserva.", "danger")
++        return redirect(url_for("materiais_detalhe", levantamento_id=levantamento.id))
++
++    levantamento.status = decisao
++    levantamento.observacao_analise = observacao_analise
++    levantamento.numero_reserva = numero_reserva
++    levantamento.analisado_por_id = session.get("usuario_id")
++    levantamento.analisado_em = datetime.utcnow()
++
++    db.session.commit()
++    flash(f"Levantamento marcado como {decisao.lower()}.", "success")
++    return redirect(url_for("materiais_detalhe", levantamento_id=levantamento.id))
++
++
++@app.route("/materiais/<int:levantamento_id>/editar", methods=["GET", "POST"])
++@login_required
++def materiais_editar(levantamento_id):
++    levantamento = LevantamentoMaterial.query.get_or_404(levantamento_id)
++
++    if not _pode_editar_levantamento(levantamento):
++        flash("Este levantamento não pode mais ser editado.", "danger")
++        return redirect(url_for("materiais_detalhe", levantamento_id=levantamento.id))
++
++    if request.method == "POST":
++        atividade = request.form.get("atividade", "").strip()
++        numero_om = request.form.get("numero_om", "").strip()
++        solicitante = request.form.get("solicitante", "").strip()
++        observacao = request.form.get("observacao", "").strip()
++
++        materiais_lista = request.form.getlist("item_material[]")
++        quantidades = request.form.getlist("item_quantidade[]")
++        unidades = request.form.getlist("item_unidade[]")
++
++        if not atividade or not solicitante:
++            flash("Preencha a atividade/OM e o solicitante.", "danger")
++            return redirect(url_for("materiais_editar", levantamento_id=levantamento.id))
++
++        itens_novos = []
++        for i in range(len(materiais_lista)):
++            material = materiais_lista[i].strip()
++            quantidade_raw = quantidades[i].strip() if i < len(quantidades) else ""
++            unidade = unidades[i].strip() if i < len(unidades) else ""
++
++            if not material or not quantidade_raw:
++                continue
++
++            try:
++                quantidade = float(quantidade_raw.replace(",", "."))
++            except ValueError:
++                continue
++
++            itens_novos.append(LevantamentoMaterialItem(material=material, quantidade=quantidade, unidade=unidade))
++
++        if not itens_novos:
++            flash("Adicione pelo menos um material válido com quantidade.", "danger")
++            return redirect(url_for("materiais_editar", levantamento_id=levantamento.id))
++
++        levantamento.atividade = atividade
++        levantamento.numero_om = numero_om
++        levantamento.solicitante = solicitante
++        levantamento.observacao = observacao
++        levantamento.itens = itens_novos
++
++        db.session.commit()
++        flash("Levantamento atualizado.", "success")
++        return redirect(url_for("materiais_detalhe", levantamento_id=levantamento.id))
++
++    return render_template(
++        "form_materiais.html",
++        unidades=MATERIAL_UNIDADES,
++        levantamento=levantamento,
++    )
++
++
++@app.route("/materiais/<int:levantamento_id>/cancelar", methods=["POST"])
++@login_required
++def materiais_cancelar(levantamento_id):
++    levantamento = LevantamentoMaterial.query.get_or_404(levantamento_id)
++
++    if not _pode_editar_levantamento(levantamento):
++        flash("Este levantamento não pode mais ser cancelado.", "danger")
++        return redirect(url_for("materiais_detalhe", levantamento_id=levantamento.id))
++
++    levantamento.status = "Cancelado"
++    levantamento.analisado_por_id = session.get("usuario_id")
++    levantamento.analisado_em = datetime.utcnow()
++
++    db.session.commit()
++    flash("Levantamento cancelado.", "success")
++    return redirect(url_for("materiais_historico"))
++
++
+ @app.route("/checklists")
+ @login_required
+ def checklist_modelos():
+@@ -1081,6 +1375,7 @@
+     db.create_all()
+ 
+ if __name__ == "__main__":
+-    app.run(debug=True)
++    debug_mode = os.getenv("FLASK_DEBUG", "true").lower() == "true"
++    app.run(debug=debug_mode)
+ 
+ 

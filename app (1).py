@@ -28,13 +28,15 @@ elif os.getenv("MYSQL_URL"):
         db_url = db_url.replace("mysql://", "mysql+pymysql://", 1)
     app.config["SQLALCHEMY_DATABASE_URI"] = db_url
 else:
-    # Aceita tanto o padrão local (.env com underscore) quanto o padrão
-    # que o Railway usa nas variáveis do serviço MySQL (sem underscore).
-    DB_USER = os.getenv("MYSQL_USER") or os.getenv("MYSQLUSER", "root")
-    DB_PASSWORD = quote_plus(os.getenv("MYSQL_PASSWORD") or os.getenv("MYSQLPASSWORD", "SUA_SENHA_AQUI"))
-    DB_HOST = os.getenv("MYSQL_HOST") or os.getenv("MYSQLHOST", "localhost")
-    DB_PORT = os.getenv("MYSQL_PORT") or os.getenv("MYSQLPORT", "3306")
-    DB_NAME = os.getenv("MYSQL_DB") or os.getenv("MYSQLDATABASE", "sistema_seguranca")
+    # Aceita tanto o padrão que o Railway usa nas variáveis do serviço MySQL
+    # (sem underscore) quanto o padrão local do .env (com underscore).
+    # Railway vem primeiro: em produção, queremos sempre priorizar o banco
+    # gerenciado, mesmo que o .env local (enviado por engano) também exista.
+    DB_USER = os.getenv("MYSQLUSER") or os.getenv("MYSQL_USER", "root")
+    DB_PASSWORD = quote_plus(os.getenv("MYSQLPASSWORD") or os.getenv("MYSQL_PASSWORD", "SUA_SENHA_AQUI"))
+    DB_HOST = os.getenv("MYSQLHOST") or os.getenv("MYSQL_HOST", "localhost")
+    DB_PORT = os.getenv("MYSQLPORT") or os.getenv("MYSQL_PORT", "3306")
+    DB_NAME = os.getenv("MYSQLDATABASE") or os.getenv("MYSQL_DB", "sistema_seguranca")
 
     app.config["SQLALCHEMY_DATABASE_URI"] = (
         f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"

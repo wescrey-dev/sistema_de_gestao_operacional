@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block title %}Novo usuário{% endblock %}
+{% block page_title %}Novo usuário{% endblock %}
+{% block page_description %}Cadastre um novo usuário e defina o perfil de acesso dele.{% endblock %}
+{% block content %}
+<form method="POST" class="card form-shell">
+  <label>
+    Nome
+    <input type="text" name="nome" placeholder="Nome completo" required>
+  </label>
+
+  <label>
+    Email
+    <input type="email" name="email" placeholder="email@empresa.com" required>
+  </label>
+
+  <label>
+    Senha inicial
+    <input type="text" name="senha" placeholder="Defina uma senha inicial" required>
+  </label>
+
+  <label>
+    Perfil
+    <select name="perfil">
+      {% for p in perfis %}
+      <option value="{{ p }}" {{ 'selected' if p == 'usuario' else '' }}>{{ p }}</option>
+      {% endfor %}
+    </select>
+  </label>
+
+  <div class="form-actions" style="margin-top: 16px; gap: 12px;">
+    <button class="button" type="submit">Criar usuário</button>
+    <a class="button button-secondary" href="{{ url_for('usuarios') }}">Cancelar</a>
+  </div>
+</form>
+{% endblock %}

@@ -8,6 +8,8 @@ from urllib.parse import quote_plus
 from functools import wraps
 from datetime import datetime
 import os
+import secrets
+import string
 
 app = Flask(__name__)
 _secret_key = os.getenv("SECRET_KEY")
@@ -87,7 +89,7 @@ class OPAI(db.Model):
     numero_pessoas = db.Column(db.Integer)
     status_opai = db.Column(db.String(50))
     comportamentos_positivos = db.Column(db.Text)
-    usuario_id = db.Column(db.Integer, db.ForeignKey("usuarios.id"), nullable=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True)
     criado_em = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     desvios = db.relationship("OPAIDesvio", backref="opai", cascade="all, delete-orphan", lazy=True)
     usuario = db.relationship("Usuario", foreign_keys=[usuario_id])
@@ -118,7 +120,7 @@ class AP(db.Model):
     desvio_tratado = db.Column(db.String(10))
     outros_texto = db.Column(db.Text)
     acao_outro_texto = db.Column(db.Text)
-    usuario_id = db.Column(db.Integer, db.ForeignKey("usuarios.id"), nullable=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True)
     criado_em = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     itens = db.relationship("APItem", backref="ap", cascade="all, delete-orphan", lazy=True)
     usuario = db.relationship("Usuario", foreign_keys=[usuario_id])
@@ -146,7 +148,7 @@ class IPS(db.Model):
     quantidade_desvios = db.Column(db.Integer, nullable=False, default=0)
     quantidade_acoes_propostas = db.Column(db.Integer, nullable=False, default=0)
     quantidade_acoes_concluidas = db.Column(db.Integer, nullable=False, default=0)
-    usuario_id = db.Column(db.Integer, db.ForeignKey("usuarios.id"), nullable=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True)
     criado_em = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     itens = db.relationship("IPSItem", backref="ips", cascade="all, delete-orphan", lazy=True)
     usuario = db.relationship("Usuario", foreign_keys=[usuario_id])
@@ -176,8 +178,8 @@ class LevantamentoMaterial(db.Model):
     status = db.Column(db.String(30), nullable=False, default="Pendente")
     observacao_analise = db.Column(db.Text)
     numero_reserva = db.Column(db.String(100))
-    usuario_id = db.Column(db.Integer, db.ForeignKey("usuarios.id"), nullable=True)
-    analisado_por_id = db.Column(db.Integer, db.ForeignKey("usuarios.id"), nullable=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True)
+    analisado_por_id = db.Column(db.Integer, db.ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True)
     criado_em = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     analisado_em = db.Column(db.DateTime)
 
@@ -304,16 +306,6 @@ def inject_globals():
 def register():
     total_usuarios = Usuario.query.count()
 
-    # Se já existe usuário no sistema, só admin pode cadastrar outro
-    if total_usuarios > 0:
-        if "usuario_id" not in session:
-            flash("Somente administradores podem cadastrar novos usuários.", "danger")
-            return redirect(url_for("login"))
-
-        if session.get("usuario_perfil") != "admin":
-            flash("Somente administradores podem cadastrar novos usuários.", "danger")
-            return redirect(url_for("registros"))
-
     if request.method == "POST":
         nome = request.form.get("nome", "").strip()
         email = request.form.get("email", "").strip().lower()
@@ -333,6 +325,9 @@ def register():
             flash("Já existe um usuário com este email.", "danger")
             return redirect(url_for("register"))
 
+        # O primeiro usuário do sistema vira admin automaticamente.
+        # Todos os demais entram com o perfil básico; um admin pode
+        # elevar o perfil depois, pelo painel de Usuários.
         perfil_inicial = "admin" if total_usuarios == 0 else "usuario"
 
         usuario = Usuario(
@@ -347,11 +342,7 @@ def register():
         db.session.commit()
 
         flash("Usuário criado com sucesso.", "success")
-
-        if total_usuarios == 0:
-            return redirect(url_for("login"))
-
-        return redirect(url_for("usuarios"))
+        return redirect(url_for("login"))
 
     return render_template("register.html")
 
@@ -397,6 +388,110 @@ def toggle_usuario(usuario_id):
     db.session.commit()
 
     flash("Status do usuário atualizado com sucesso.", "success")
+    return redirect(url_for("usuarios"))
+
+
+def _gerar_senha_temporaria(tamanho=10):
+    # Usa secrets (não random) por ser criptograficamente seguro - adequado
+    # para gerar credenciais, mesmo que temporárias.
+    alfabeto = string.ascii_letters + string.digits
+    return "".join(secrets.choice(alfabeto) for _ in range(tamanho))
+
+
+@app.route("/usuarios/novo", methods=["GET", "POST"])
+@perfil_required("admin")
+def usuario_novo():
+    if request.method == "POST":
+        nome = request.form.get("nome", "").strip()
+        email = request.form.get("email", "").strip().lower()
+        perfil = request.form.get("perfil", "usuario")
+        senha = request.form.get("senha", "")
+
+        if not nome or not email or not senha:
+            flash("Preencha todos os campos.", "danger")
+            return redirect(url_for("usuario_novo"))
+
+        if perfil not in ["admin", "supervisor", "usuario"]:
+            flash("Perfil inválido.", "danger")
+            return redirect(url_for("usuario_novo"))
+
+        existente = Usuario.query.filter_by(email=email).first()
+        if existente:
+            flash("Já existe um usuário com este email.", "danger")
+            return redirect(url_for("usuario_novo"))
+
+        usuario = Usuario(
+            nome=nome,
+            email=email,
+            senha_hash=generate_password_hash(senha),
+            perfil=perfil,
+            ativo=True,
+        )
+        db.session.add(usuario)
+        db.session.commit()
+
+        flash("Usuário criado com sucesso.", "success")
+        return redirect(url_for("usuarios"))
+
+    return render_template("usuario_novo.html", perfis=["admin", "supervisor", "usuario"])
+
+
+@app.route("/usuarios/<int:usuario_id>/editar", methods=["POST"])
+@perfil_required("admin")
+def usuario_editar(usuario_id):
+    usuario = Usuario.query.get_or_404(usuario_id)
+
+    nome = request.form.get("nome", "").strip()
+    email = request.form.get("email", "").strip().lower()
+
+    if not nome or not email:
+        flash("Nome e email são obrigatórios.", "danger")
+        return redirect(url_for("usuarios"))
+
+    existente = Usuario.query.filter(Usuario.email == email, Usuario.id != usuario.id).first()
+    if existente:
+        flash("Já existe outro usuário com este email.", "danger")
+        return redirect(url_for("usuarios"))
+
+    usuario.nome = nome
+    usuario.email = email
+    db.session.commit()
+
+    # Mantém a sessão coerente se o admin editou o próprio nome/email.
+    if usuario.id == session.get("usuario_id"):
+        session["usuario_nome"] = usuario.nome
+
+    flash("Dados do usuário atualizados com sucesso.", "success")
+    return redirect(url_for("usuarios"))
+
+
+@app.route("/usuarios/<int:usuario_id>/resetar-senha", methods=["POST"])
+@perfil_required("admin")
+def usuario_resetar_senha(usuario_id):
+    usuario = Usuario.query.get_or_404(usuario_id)
+
+    senha_temporaria = _gerar_senha_temporaria()
+    usuario.senha_hash = generate_password_hash(senha_temporaria)
+    db.session.commit()
+
+    flash(f"Senha redefinida para {usuario.nome}. Nova senha temporária: {senha_temporaria}", "success")
+    return redirect(url_for("usuarios"))
+
+
+@app.route("/usuarios/<int:usuario_id>/excluir", methods=["POST"])
+@perfil_required("admin")
+def usuario_excluir(usuario_id):
+    usuario = Usuario.query.get_or_404(usuario_id)
+
+    if usuario.id == session.get("usuario_id"):
+        flash("Você não pode excluir seu próprio usuário.", "danger")
+        return redirect(url_for("usuarios"))
+
+    nome_excluido = usuario.nome
+    db.session.delete(usuario)
+    db.session.commit()
+
+    flash(f"Usuário {nome_excluido} excluído com sucesso.", "success")
     return redirect(url_for("usuarios"))
 
 @app.route("/login", methods=["GET", "POST"])
@@ -1302,7 +1397,7 @@ class ChecklistExecucao(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     checklist_modelo_id = db.Column(db.Integer, db.ForeignKey("checklist_modelos.id"), nullable=False)
-    usuario_id = db.Column(db.Integer, db.ForeignKey("usuarios.id"), nullable=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True)
     status_execucao = db.Column(db.String(50), nullable=False, default="concluido")
     criado_em = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 

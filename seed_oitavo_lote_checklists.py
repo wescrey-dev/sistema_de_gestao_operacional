@@ -2,9 +2,9 @@ from app import (
     app,
     db,
     ChecklistModelo,
-    ChecklistCampoCabecalho,
-    ChecklistSecao,
-    ChecklistItemModelo,
+        ChecklistCampoCabecalho,
+        ChecklistSecao,
+        ChecklistItemModelo,
 )
 
 COMMON_HEADER = [

@@ -3,7 +3,8 @@ page_title %}Modelos de checklist{% endblock %} {% block page_description
 %}Selecione um modelo para preencher o checklist digital.{% endblock %} {% block
 content %}
 
-<div class="record-actions" style="margin-bottom: 16px">
+<div class="record-actions" style="margin-bottom:16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+<input id="buscarChecklist" type="search" placeholder="🔍 Buscar checklist por nome, código ou área..." style="padding:10px 14px;min-width:340px;border:1px solid #ccc;border-radius:8px;">
   <a
     class="button button-secondary"
     href="{{ url_for('checklist_historico') }}"
@@ -14,7 +15,7 @@ content %}
 
 <section class="record-grid">
   {% for modelo in modelos %}
-  <article class="card record-card checklist-model-card">
+  <article class="card record-card checklist-model-card" data-search="{{ (modelo.nome ~ ' ' ~ (modelo.codigo or '') ~ ' ' ~ (modelo.area_padrao or '') ~ ' ' ~ (modelo.descricao or ''))|lower }}">
     <div class="record-header">
       <div>
         <span class="pill">Checklist</span>
@@ -46,3 +47,17 @@ content %}
   {% endfor %}
 </section>
 {% endblock %}
+
+<script>
+document.addEventListener('DOMContentLoaded',()=>{
+const i=document.getElementById('buscarChecklist');
+const cards=[...document.querySelectorAll('.checklist-model-card')];
+i.addEventListener('input',()=>{
+ const q=i.value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+ cards.forEach(c=>{
+ const t=c.dataset.search.normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+ c.style.display=t.includes(q)?'':'none';
+ });
+});
+});
+</script>

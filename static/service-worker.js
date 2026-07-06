@@ -1,15 +1,11 @@
-const CACHE_NAME = "sgo-cache-v1";
+const CACHE_NAME = "sgo-cache-v3";
 
-// Assets estáticos que raramente mudam - cache-first
-const ASSETS_ESTATICOS = [
-  "/static/style.css",
-  "/static/icons/icon-192x192.png",
-  "/static/icons/icon-512x512.png",
-];
+// Só cacheia o CSS no install — robusto, sem risco de falhar por ícone ausente
+const ASSETS_CORE = ["/static/style.css"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS_ESTATICOS))
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS_CORE))
   );
   self.skipWaiting();
 });
@@ -18,9 +14,7 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((nomes) =>
       Promise.all(
-        nomes
-          .filter((nome) => nome !== CACHE_NAME)
-          .map((nome) => caches.delete(nome))
+        nomes.filter((n) => n !== CACHE_NAME).map((n) => caches.delete(n))
       )
     )
   );
@@ -30,16 +24,12 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   const { request } = event;
 
-  // Nunca interceptar métodos que alteram dados (POST/PUT/DELETE) - eles
-  // precisam de uma conexão real com o servidor para fazer sentido.
-  // Deixa o navegador tratar normalmente, sem passar pelo cache.
-  if (request.method !== "GET") {
-    return;
-  }
+  // Nunca intercepta POST/PUT/DELETE — formulários sempre precisam de conexão
+  if (request.method !== "GET") return;
 
   const url = new URL(request.url);
 
-  // Assets estáticos: cache-first (raramente mudam, prioriza velocidade)
+  // Assets estáticos: cache-first (CSS, ícones, JS)
   if (url.pathname.startsWith("/static/")) {
     event.respondWith(
       caches.match(request).then((cached) => {
@@ -48,15 +38,13 @@ self.addEventListener("fetch", (event) => {
           const copia = resposta.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(request, copia));
           return resposta;
-        });
+        }).catch(() => cached);
       })
     );
     return;
   }
 
-  // Páginas HTML: network-first, cai para o cache se estiver offline.
-  // Assim o usuário sempre vê a versão mais nova quando há conexão,
-  // mas ainda consegue abrir a última versão vista quando está offline.
+  // Páginas HTML: network-first, fallback para cache se offline
   event.respondWith(
     fetch(request)
       .then((resposta) => {

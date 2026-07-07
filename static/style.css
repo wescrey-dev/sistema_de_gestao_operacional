@@ -2,10 +2,16 @@
   --radius: 18px;
   --shadow: 0 14px 35px rgba(15, 23, 42, 0.08);
   --shadow-strong: 0 18px 42px rgba(15, 23, 42, 0.12);
-  --primary: #2563eb;
-  --primary-2: #1d4ed8;
-  --success: #0f9f6e;
-  --danger: #dc2626;
+  --primary: #1b3358;
+  --primary-2: #12233f;
+  --accent: #e9a23b;
+  --accent-2: #c97f1f;
+  --success: #1f9d6c;
+  --danger: #d64545;
+
+  --font-display: "Space Grotesk", "Inter", "Segoe UI", Arial, sans-serif;
+  --font-body: "Inter", "Segoe UI", Arial, sans-serif;
+  --font-mono: "IBM Plex Mono", "Consolas", monospace;
 }
 
 body.light-theme {
@@ -50,10 +56,26 @@ body {
 
 body {
   min-height: 100vh;
-  font-family: Inter, "Segoe UI", Arial, sans-serif;
+  font-family: var(--font-body);
   background: var(--bg-gradient);
   color: var(--text);
   display: grid;
+}
+
+h1, h2, h3, h4,
+.brand h1,
+.topbar h2,
+.hero-card h3,
+.mobile-topbar-title,
+.stat-card strong {
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
+}
+
+.record-header strong,
+.data-table td:first-child,
+code {
+  font-family: var(--font-mono);
 }
 
 body.has-sidebar {
@@ -84,10 +106,24 @@ body.no-sidebar {
   display: grid;
   place-items: center;
   border-radius: 16px;
-  background: linear-gradient(135deg, var(--primary), #7ca8ff);
-  color: #fff;
+  background: linear-gradient(135deg, var(--primary), var(--primary-2));
+  color: var(--accent);
   font-weight: 800;
+  font-family: var(--font-display);
   box-shadow: var(--shadow-strong);
+  position: relative;
+}
+
+.brand-badge::after {
+  content: "";
+  position: absolute;
+  bottom: -3px;
+  right: -3px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--panel);
 }
 
 .brand h1 {
@@ -113,11 +149,13 @@ body.no-sidebar {
   border-radius: 14px;
   background: var(--nav-bg);
   border: 1px solid transparent;
+  border-left: 3px solid transparent;
   transition: 0.2s ease;
 }
 
 .nav-link:hover {
-  border-color: rgba(37, 99, 235, 0.22);
+  border-color: rgba(233, 162, 59, 0.35);
+  border-left-color: var(--accent);
   background: var(--nav-hover);
 }
 
@@ -219,6 +257,25 @@ body.no-sidebar {
   justify-content: space-between;
   gap: 20px;
   align-items: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 6px;
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--accent) 0px,
+    var(--accent) 14px,
+    var(--primary) 14px,
+    var(--primary) 28px
+  );
+  opacity: 0.55;
 }
 
 .hero-card h3 {
@@ -297,9 +354,9 @@ body.no-sidebar {
 }
 
 .pill-warning {
-  background: rgba(245, 158, 11, 0.12);
-  border-color: rgba(245, 158, 11, 0.22);
-  color: #b45309;
+  background: rgba(233, 162, 59, 0.14);
+  border-color: rgba(233, 162, 59, 0.3);
+  color: var(--accent-2);
 }
 
 .record-list,

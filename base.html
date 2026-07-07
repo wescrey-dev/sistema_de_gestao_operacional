@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}Sistema de Gestão Operacional{% endblock %}</title>
+
+    <link
+      rel="manifest"
+      href="{{ url_for('static', filename='manifest.json') }}"
+    />
+    <meta name="theme-color" content="#1B3358" />
+    <link
+      rel="icon"
+      href="{{ url_for('static', filename='icons/favicon-32x32.png') }}"
+      sizes="32x32"
+    />
+    <link
+      rel="apple-touch-icon"
+      href="{{ url_for('static', filename='icons/icon-192x192.png') }}"
+    />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="SGO" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap"
+      rel="stylesheet"
+    />
+
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/tom-select/dist/css/tom-select.css"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='style.css') }}"
+    />
+  </head>
+  <body
+    class="light-theme auth-aware {% if usuario_logado %}has-sidebar{% else %}no-sidebar{% endif %}"
+  >
+    {% if usuario_logado %}
+    <aside class="sidebar" id="mobile-sidebar">
+      <div class="mobile-backdrop" id="mobile-backdrop"></div>
+      <div class="brand">
+        <div class="brand-badge">SGO</div>
+        <div>
+          <h1>Sistema de Gestão Operacional</h1>
+          <p>OPAI · AP · IPS · CHECKLIST</p>
+        </div>
+      </div>
+
+      <nav class="nav">
+        {% if session.get("usuario_perfil") in ["admin", "supervisor"] %}
+        <a href="{{ url_for('index') }}" class="nav-link">Dashboard</a>
+        {% endif %}
+        <a href="{{ url_for('opai') }}" class="nav-link">Nova OPAI</a>
+        <a href="{{ url_for('ap') }}" class="nav-link">Novo AP</a>
+        <a href="{{ url_for('ips') }}" class="nav-link">Nova IPS</a>
+        <a href="{{ url_for('materiais') }}" class="nav-link"
+          >Levantamento de materiais</a
+        >
+        <a href="{{ url_for('materiais_historico') }}" class="nav-link"
+          >Materiais · Histórico</a
+        >
+        <a href="{{ url_for('checklist_modelos') }}" class="nav-link"
+          >Checklists</a
+        >
+        <a href="{{ url_for('registros') }}" class="nav-link">Registros</a>
+        {% if session.get("usuario_perfil") == "admin" %}
+        <a href="{{ url_for('usuarios') }}" class="nav-link">Usuários</a>
+        {% endif %}
+        <a href="{{ url_for('logout') }}" class="nav-link danger-link">Sair</a>
+      </nav>
+
+      <div class="sidebar-card">
+        <strong>Usuário logado</strong>
+        <p>{{ usuario_nome }}</p>
+      </div>
+    </aside>
+    {% endif %}
+
+    <main class="content {% if not usuario_logado %}auth-content{% endif %}">
+      {% if usuario_logado %}
+      <div class="mobile-topbar">
+        <button
+          class="mobile-menu-button"
+          type="button"
+          id="mobile-menu-toggle"
+        >
+          ☰ Menu
+        </button>
+        <span class="mobile-topbar-title">Sistema de Gestão Operacional</span>
+      </div>
+
+      <header class="topbar">
+        <div>
+          <h2>{% block page_title %}{% endblock %}</h2>
+          <p class="muted">{% block page_description %}{% endblock %}</p>
+        </div>
+
+        <div class="top-actions">
+          <button
+            class="button button-secondary"
+            type="button"
+            id="pwa-install-btn"
+            style="display: none"
+          >
+            ⬇ Instalar App
+          </button>
+
+          <button
+            class="button button-secondary"
+            type="button"
+            id="theme-toggle"
+          >
+            Alternar tema
+          </button>
+
+          {% if session.get("usuario_perfil") == "admin" %}
+          <a
+            class="button button-secondary"
+            href="{{ url_for('admin_checklist_modelos') }}"
+          >
+            Administrar modelos de checklist
+          </a>
+          {% endif %}
+
+          <a class="button button-secondary" href="{{ url_for('registros') }}"
+            >Ver registros</a
+          >
+        </div>
+      </header>
+      {% endif %} {% block base_flashes %} {% with messages =
+      get_flashed_messages(with_categories=true) %} {% if messages %} {% for
+      category, message in messages %}
+      <div class="alert alert-{{ category }}">{{ message }}</div>
+      {% endfor %} {% endif %} {% endwith %} {% endblock %} {% block content
+      %}{% endblock %}
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        const savedTheme = localStorage.getItem("so-theme");
+        if (savedTheme === "dark") {
+          document.body.classList.remove("light-theme");
+          document.body.classList.add("dark-theme");
+        } else {
+          document.body.classList.remove("dark-theme");
+          document.body.classList.add("light-theme");
+        }
+
+        const toggle = document.getElementById("theme-toggle");
+        if (toggle) {
+          toggle.addEventListener("click", function () {
+            document.body.classList.toggle("dark-theme");
+            document.body.classList.toggle("light-theme");
+            localStorage.setItem(
+              "so-theme",
+              document.body.classList.contains("dark-theme") ? "dark" : "light",
+            );
+          });
+        }
+
+        document.querySelectorAll("select").forEach(function (el) {
+          new TomSelect(el, {
+            create: false,
+            allowEmptyOption: true,
+            maxOptions: 200,
+            dropdownParent: "body",
+            render: {
+              no_results: function () {
+                return '<div class="no-results">Nenhum resultado encontrado</div>';
+              },
+            },
+          });
+        });
+
+        const mobileMenuButton = document.getElementById("mobile-menu-toggle");
+        const mobileSidebar = document.getElementById("mobile-sidebar");
+        const mobileBackdrop = document.getElementById("mobile-backdrop");
+
+        function openMobileMenu() {
+          document.body.classList.add("mobile-nav-open");
+        }
+        function closeMobileMenu() {
+          document.body.classList.remove("mobile-nav-open");
+        }
+
+        if (mobileMenuButton && mobileSidebar && mobileBackdrop) {
+          mobileMenuButton.addEventListener("click", function (e) {
+            e.stopPropagation();
+            openMobileMenu();
+          });
+          mobileBackdrop.addEventListener("click", closeMobileMenu);
+          mobileSidebar.addEventListener("click", function (e) {
+            e.stopPropagation();
+          });
+          mobileSidebar.querySelectorAll(".nav-link").forEach(function (link) {
+            link.addEventListener("click", function () {
+              setTimeout(closeMobileMenu, 150);
+            });
+          });
+        }
+      });
+
+      // ── PWA: registro do Service Worker ──────────────────────────────────
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", function () {
+          navigator.serviceWorker
+            .register("{{ url_for('static', filename='service-worker.js') }}", {
+              scope: "/",
+            })
+            .then(function (reg) {
+              console.log("SW registrado:", reg.scope);
+            })
+            .catch(function (erro) {
+              console.warn("Falha ao registrar SW:", erro);
+            });
+        });
+      }
+
+      // ── PWA: botão "Instalar App" ─────────────────────────────────────────
+      // Funciona automaticamente no Android (Chrome) e Windows (Edge/Chrome).
+      // No iPhone (Safari): o usuário instala manualmente via
+      // Compartilhar → "Adicionar à Tela de Início".
+      var deferredPrompt = null;
+      var installBtn = document.getElementById("pwa-install-btn");
+
+      window.addEventListener("beforeinstallprompt", function (e) {
+        e.preventDefault();
+        deferredPrompt = e;
+        if (installBtn) installBtn.style.display = "inline-flex";
+      });
+
+      if (installBtn) {
+        installBtn.addEventListener("click", function () {
+          if (!deferredPrompt) return;
+          deferredPrompt.prompt();
+          deferredPrompt.userChoice.then(function (resultado) {
+            if (resultado.outcome === "accepted") {
+              installBtn.style.display = "none";
+            }
+            deferredPrompt = null;
+          });
+        });
+      }
+
+      window.addEventListener("appinstalled", function () {
+        if (installBtn) installBtn.style.display = "none";
+        deferredPrompt = null;
+      });
+    </script>
+  </body>
+</html>

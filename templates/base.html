@@ -5,19 +5,37 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>{% block title %}Sistema de Gestão Operacional{% endblock %}</title>
 
-    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}" />
+    <link
+      rel="manifest"
+      href="{{ url_for('static', filename='manifest.json') }}"
+    />
     <meta name="theme-color" content="#2563eb" />
-    <link rel="icon" href="{{ url_for('static', filename='icons/favicon-32x32.png') }}" sizes="32x32" />
-    <link rel="apple-touch-icon" href="{{ url_for('static', filename='icons/icon-192x192.png') }}" />
+    <link
+      rel="icon"
+      href="{{ url_for('static', filename='icons/favicon-32x32.png') }}"
+      sizes="32x32"
+    />
+    <link
+      rel="apple-touch-icon"
+      href="{{ url_for('static', filename='icons/icon-192x192.png') }}"
+    />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="SGO" />
 
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select/dist/css/tom-select.css" />
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/tom-select/dist/css/tom-select.css"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='style.css') }}"
+    />
   </head>
-  <body class="light-theme auth-aware {% if usuario_logado %}has-sidebar{% else %}no-sidebar{% endif %}">
+  <body
+    class="light-theme auth-aware {% if usuario_logado %}has-sidebar{% else %}no-sidebar{% endif %}"
+  >
     {% if usuario_logado %}
     <aside class="sidebar" id="mobile-sidebar">
       <div class="mobile-backdrop" id="mobile-backdrop"></div>
@@ -36,9 +54,15 @@
         <a href="{{ url_for('opai') }}" class="nav-link">Nova OPAI</a>
         <a href="{{ url_for('ap') }}" class="nav-link">Novo AP</a>
         <a href="{{ url_for('ips') }}" class="nav-link">Nova IPS</a>
-        <a href="{{ url_for('materiais') }}" class="nav-link">Levantamento de materiais</a>
-        <a href="{{ url_for('materiais_historico') }}" class="nav-link">Materiais · Histórico</a>
-        <a href="{{ url_for('checklist_modelos') }}" class="nav-link">Checklists</a>
+        <a href="{{ url_for('materiais') }}" class="nav-link"
+          >Levantamento de materiais</a
+        >
+        <a href="{{ url_for('materiais_historico') }}" class="nav-link"
+          >Materiais · Histórico</a
+        >
+        <a href="{{ url_for('checklist_modelos') }}" class="nav-link"
+          >Checklists</a
+        >
         <a href="{{ url_for('registros') }}" class="nav-link">Registros</a>
         {% if session.get("usuario_perfil") == "admin" %}
         <a href="{{ url_for('usuarios') }}" class="nav-link">Usuários</a>
@@ -56,7 +80,13 @@
     <main class="content {% if not usuario_logado %}auth-content{% endif %}">
       {% if usuario_logado %}
       <div class="mobile-topbar">
-        <button class="mobile-menu-button" type="button" id="mobile-menu-toggle">☰ Menu</button>
+        <button
+          class="mobile-menu-button"
+          type="button"
+          id="mobile-menu-toggle"
+        >
+          ☰ Menu
+        </button>
         <span class="mobile-topbar-title">Sistema de Gestão Operacional</span>
       </div>
 
@@ -67,36 +97,43 @@
         </div>
 
         <div class="top-actions">
-          <button class="button button-secondary" type="button" id="pwa-install-btn" style="display:none;">
+          <button
+            class="button button-secondary"
+            type="button"
+            id="pwa-install-btn"
+            style="display: none"
+          >
             ⬇ Instalar App
           </button>
 
-          <button class="button button-secondary" type="button" id="theme-toggle">
+          <button
+            class="button button-secondary"
+            type="button"
+            id="theme-toggle"
+          >
             Alternar tema
           </button>
 
           {% if session.get("usuario_perfil") == "admin" %}
-          <a class="button button-secondary" href="{{ url_for('admin_checklist_modelos') }}">
+          <a
+            class="button button-secondary"
+            href="{{ url_for('admin_checklist_modelos') }}"
+          >
             Administrar modelos de checklist
           </a>
           {% endif %}
 
-          <a class="button button-secondary" href="{{ url_for('registros') }}">Ver registros</a>
+          <a class="button button-secondary" href="{{ url_for('registros') }}"
+            >Ver registros</a
+          >
         </div>
       </header>
-      {% endif %}
-
-      {% block base_flashes %}
-      {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-      {% for category, message in messages %}
+      {% endif %} {% block base_flashes %} {% with messages =
+      get_flashed_messages(with_categories=true) %} {% if messages %} {% for
+      category, message in messages %}
       <div class="alert alert-{{ category }}">{{ message }}</div>
-      {% endfor %}
-      {% endif %}
-      {% endwith %}
-      {% endblock %}
-
-      {% block content %}{% endblock %}
+      {% endfor %} {% endif %} {% endwith %} {% endblock %} {% block content
+      %}{% endblock %}
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/tom-select/dist/js/tom-select.complete.min.js"></script>
@@ -116,8 +153,10 @@
           toggle.addEventListener("click", function () {
             document.body.classList.toggle("dark-theme");
             document.body.classList.toggle("light-theme");
-            localStorage.setItem("so-theme",
-              document.body.classList.contains("dark-theme") ? "dark" : "light");
+            localStorage.setItem(
+              "so-theme",
+              document.body.classList.contains("dark-theme") ? "dark" : "light",
+            );
           });
         }
 
@@ -139,8 +178,12 @@
         const mobileSidebar = document.getElementById("mobile-sidebar");
         const mobileBackdrop = document.getElementById("mobile-backdrop");
 
-        function openMobileMenu() { document.body.classList.add("mobile-nav-open"); }
-        function closeMobileMenu() { document.body.classList.remove("mobile-nav-open"); }
+        function openMobileMenu() {
+          document.body.classList.add("mobile-nav-open");
+        }
+        function closeMobileMenu() {
+          document.body.classList.remove("mobile-nav-open");
+        }
 
         if (mobileMenuButton && mobileSidebar && mobileBackdrop) {
           mobileMenuButton.addEventListener("click", function (e) {
@@ -148,9 +191,13 @@
             openMobileMenu();
           });
           mobileBackdrop.addEventListener("click", closeMobileMenu);
-          mobileSidebar.addEventListener("click", function (e) { e.stopPropagation(); });
+          mobileSidebar.addEventListener("click", function (e) {
+            e.stopPropagation();
+          });
           mobileSidebar.querySelectorAll(".nav-link").forEach(function (link) {
-            link.addEventListener("click", function () { setTimeout(closeMobileMenu, 150); });
+            link.addEventListener("click", function () {
+              setTimeout(closeMobileMenu, 150);
+            });
           });
         }
       });
@@ -159,7 +206,9 @@
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", function () {
           navigator.serviceWorker
-            .register("{{ url_for('static', filename='service-worker.js') }}", { scope: "/" })
+            .register("{{ url_for('static', filename='service-worker.js') }}", {
+              scope: "/",
+            })
             .then(function (reg) {
               console.log("SW registrado:", reg.scope);
             })

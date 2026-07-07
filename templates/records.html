@@ -138,6 +138,18 @@ content %}
   </p>
 </div>
 
+      {% if registro.desvios %}
+      <div class="record-note">
+        <strong>Desvios registrados</strong>
+        {% for desvio in registro.desvios %}
+        <p style="margin-top: 8px;">
+          <strong>Classe do Desvio:</strong> {{ desvio.classe or "Não informada" }}<br>
+          <strong>Ação corretiva:</strong> {{ desvio.acao_imediata or "Não informada" }}
+        </p>
+        {% endfor %}
+      </div>
+      {% endif %}
+
       {% if registro.comportamentos_positivos %}
       <div class="record-note">
         <strong>Comportamentos positivos</strong>
@@ -188,6 +200,43 @@ content %}
       <div class="record-note">
         <strong>Descrição do local</strong>
         <p>{{ registro.descricao_local }}</p>
+      </div>
+      {% endif %}
+
+      {% set classes_desvio = [] %}
+      {% for item in registro.itens %}
+        {% if item.tipo_item != "acao_imediata" and item.tipo_item not in classes_desvio %}
+          {% set _ = classes_desvio.append(item.tipo_item) %}
+        {% endif %}
+      {% endfor %}
+      {% if classes_desvio or registro.outros_texto %}
+      <div class="record-note">
+        <strong>Classe do Desvio Observado (área, comportamento, procedimento..)</strong>
+        <p>
+          {% if classes_desvio %}{{ classes_desvio | join(", ") }}{% else %}Não informada.{% endif %}
+        </p>
+        <strong>Descrição do Desvio Observado</strong>
+        <p>
+          {% for item in registro.itens %}
+            {% if item.tipo_item != "acao_imediata" %}{{ item.valor }}{% if not loop.last %}, {% endif %}{% endif %}
+          {% endfor %}
+          {% if registro.outros_texto %} — {{ registro.outros_texto }}{% endif %}
+        </p>
+      </div>
+      {% endif %}
+
+      {% set acoes_imediatas = [] %}
+      {% for item in registro.itens %}
+        {% if item.tipo_item == "acao_imediata" %}{% set _ = acoes_imediatas.append(item.valor) %}{% endif %}
+      {% endfor %}
+      {% if acoes_imediatas or registro.acao_outro_texto %}
+      <div class="record-note">
+        <strong>Ação imediata tomada pelo emitente</strong>
+        <p>
+          {% if acoes_imediatas %}{{ acoes_imediatas | join(", ") }}{% endif %}
+          {% if registro.acao_outro_texto %} — {{ registro.acao_outro_texto }}{% endif %}
+          {% if not acoes_imediatas and not registro.acao_outro_texto %}Não informada.{% endif %}
+        </p>
       </div>
       {% endif %}
     </article>

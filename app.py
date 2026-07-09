@@ -6,7 +6,7 @@ load_dotenv()
 from werkzeug.security import generate_password_hash, check_password_hash
 from urllib.parse import quote_plus
 from functools import wraps
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
 import secrets
 import string
@@ -543,6 +543,53 @@ def index():
         + IPSItem.query.filter_by(criticidade="Crítico").count()
     )
 
+    # --- Materiais ---
+    materiais_total = LevantamentoMaterial.query.count()
+    materiais_pendentes = LevantamentoMaterial.query.filter_by(status="Pendente").count()
+
+    # --- Checklists ---
+    limite_30d = datetime.utcnow() - timedelta(days=30)
+    checklist_execucoes_30d = ChecklistExecucao.query.filter(
+        ChecklistExecucao.criado_em >= limite_30d
+    ).count()
+    checklist_anormais_abertos = ChecklistResposta.query.filter_by(
+        status_marcacao="Anormal", resolvido="Nao"
+    ).count()
+    checklist_modelos_ativos = ChecklistModelo.query.filter_by(ativo=True).count()
+
+    # --- Ranking: Classe do Desvio (OPAI) ---
+    classes_opai_raw = (
+        db.session.query(OPAIDesvio.classe, db.func.count(OPAIDesvio.id))
+        .filter(OPAIDesvio.classe.isnot(None), OPAIDesvio.classe != "")
+        .group_by(OPAIDesvio.classe)
+        .order_by(db.func.count(OPAIDesvio.id).desc())
+        .limit(5)
+        .all()
+    )
+    classes_opai = [{"nome": nome, "total": qtd} for nome, qtd in classes_opai_raw]
+
+    # --- Ranking: Área do Desvio (AP) ---
+    TIPO_ITEM_LABELS = {
+        "area": "Área",
+        "equipamento": "Equipamento",
+        "procedimento": "Procedimento",
+        "ferramenta": "Ferramenta",
+        "comportamento": "Comportamento",
+        "outro": "Outro",
+    }
+    areas_ap_raw = (
+        db.session.query(APItem.tipo_item, db.func.count(APItem.id))
+        .filter(APItem.tipo_item != "acao_imediata")
+        .group_by(APItem.tipo_item)
+        .order_by(db.func.count(APItem.id).desc())
+        .limit(5)
+        .all()
+    )
+    areas_ap = [
+        {"nome": TIPO_ITEM_LABELS.get(tipo, tipo), "total": qtd}
+        for tipo, qtd in areas_ap_raw
+    ]
+
     registros = []
     for item in OPAI.query.order_by(OPAI.criado_em.desc()).limit(5).all():
         registros.append({
@@ -577,7 +624,14 @@ def index():
         ap=ap,
         ips=ips,
         criticos=criticos,
-        registros=registros
+        registros=registros,
+        materiais_total=materiais_total,
+        materiais_pendentes=materiais_pendentes,
+        checklist_execucoes_30d=checklist_execucoes_30d,
+        checklist_anormais_abertos=checklist_anormais_abertos,
+        checklist_modelos_ativos=checklist_modelos_ativos,
+        classes_opai=classes_opai,
+        areas_ap=areas_ap,
     )
 
 @app.route("/registros")
@@ -703,7 +757,7 @@ def registros():
     )
 
 @app.route("/opai", methods=["GET","POST"])
-@login_required
+@perfil_required("admin", "supervisor")
 def opai():
     if request.method == "POST":
         registro = OPAI(local_observado=request.form.get("local_observado",""), data_opai=to_date(request.form.get("data")), nome_ut=request.form.get("nome_ut",""), numero_ut=request.form.get("numero_ut",""), auditor=request.form.get("auditor",""), re=request.form.get("re",""), equipe_observada=request.form.get("equipe_observada",""), numero_pessoas=int(request.form.get("numero_pessoas")) if request.form.get("numero_pessoas") else None, status_opai=request.form.get("status_opai",""), comportamentos_positivos=request.form.get("comportamentos_positivos",""), usuario_id=session.get("usuario_id"))
@@ -727,7 +781,7 @@ def ap():
     return render_template("form_ap.html", areas=AP_AREAS, equipamentos=AP_EQUIPAMENTOS, procedimentos=AP_PROCEDIMENTOS, ferramentas=AP_FERRAMENTAS, comportamentos=AP_COMPORTAMENTOS, outros=AP_OUTROS, acoes=AP_ACOES, criticidades=AP_CRITICIDADES)
 
 @app.route("/ips", methods=["GET","POST"])
-@login_required
+@perfil_required("admin", "supervisor")
 def ips():
     if request.method == "POST":
         registro = IPS(data_inspecao=to_date(request.form.get("data")), re=request.form.get("re",""), inspetor=request.form.get("inspetor",""), nome_ut=request.form.get("nome_ut",""), numero_ut=request.form.get("numero_ut",""), identificacao_tag=request.form.get("identificacao_tag",""), funcao=request.form.get("funcao",""), cipeiro=request.form.get("cipeiro",""), funcao_cipeiro=request.form.get("funcao_cipeiro",""), usuario_id=session.get("usuario_id"))

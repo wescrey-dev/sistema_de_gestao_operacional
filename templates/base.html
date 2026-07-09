@@ -58,9 +58,13 @@
         {% if session.get("usuario_perfil") in ["admin", "supervisor"] %}
         <a href="{{ url_for('index') }}" class="nav-link">Dashboard</a>
         {% endif %}
+        {% if session.get("usuario_perfil") in ["admin", "supervisor"] %}
         <a href="{{ url_for('opai') }}" class="nav-link">Nova OPAI</a>
+        {% endif %}
         <a href="{{ url_for('ap') }}" class="nav-link">Novo AP</a>
+        {% if session.get("usuario_perfil") in ["admin", "supervisor"] %}
         <a href="{{ url_for('ips') }}" class="nav-link">Nova IPS</a>
+        {% endif %}
         <a href="{{ url_for('materiais') }}" class="nav-link"
           >Levantamento de materiais</a
         >

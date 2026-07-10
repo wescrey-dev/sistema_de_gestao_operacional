@@ -80,6 +80,25 @@ Acompanhe o status dos seus levantamentos enviados.
         {% if levantamento.status == "Pendente" and (session.get("usuario_perfil") in ["admin", "supervisor"] or levantamento.usuario_id == session.get("usuario_id")) %}
         <a class="button button-secondary" href="{{ url_for('materiais_editar', levantamento_id=levantamento.id) }}">Editar</a>
         {% endif %}
+        {% if session.get("usuario_perfil") in ["admin", "supervisor"] %}
+        <form
+          method="POST"
+          action="{{ url_for('materiais_excluir', levantamento_id=levantamento.id) }}"
+          onsubmit="return confirm('Tem certeza que deseja excluir este levantamento? Essa ação não pode ser desfeita.');"
+          style="margin: 0;"
+        >
+          <button type="submit" class="button button-danger" title="Excluir levantamento" aria-label="Excluir levantamento">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: -3px; margin-right: 6px;">
+              <polyline points="3 6 5 6 21 6"></polyline>
+              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+              <path d="M10 11v6"></path>
+              <path d="M14 11v6"></path>
+              <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path>
+            </svg>
+            Excluir
+          </button>
+        </form>
+        {% endif %}
       </div>
     </article>
     {% else %}

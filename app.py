@@ -1031,6 +1031,16 @@ def materiais_cancelar(levantamento_id):
     return redirect(url_for("materiais_historico"))
 
 
+@app.route("/materiais/<int:levantamento_id>/excluir", methods=["POST"])
+@perfil_required("admin", "supervisor")
+def materiais_excluir(levantamento_id):
+    levantamento = LevantamentoMaterial.query.get_or_404(levantamento_id)
+    db.session.delete(levantamento)
+    db.session.commit()
+    flash("Levantamento excluído com sucesso.", "success")
+    return redirect(request.referrer or url_for("materiais"))
+
+
 @app.route("/checklists")
 @login_required
 def checklist_modelos():

@@ -151,12 +151,47 @@ body.no-sidebar {
   border: 1px solid transparent;
   border-left: 3px solid transparent;
   transition: 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .nav-link:hover {
   border-color: rgba(233, 162, 59, 0.35);
   border-left-color: var(--accent);
   background: var(--nav-hover);
+}
+
+.nav-link.active {
+  border-left-color: var(--accent);
+  background: var(--nav-hover);
+  font-weight: 700;
+}
+
+.nav-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  opacity: 0.75;
+  stroke-width: 2;
+}
+
+.nav-link.active .nav-icon {
+  opacity: 1;
+  color: var(--accent);
+}
+
+.nav-section-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 16px 6px 4px;
+}
+
+.nav-section-label:first-child {
+  margin-top: 2px;
 }
 
 .danger-link {

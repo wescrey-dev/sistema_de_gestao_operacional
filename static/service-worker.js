@@ -1,4 +1,4 @@
-const CACHE_NAME = "sgo-cache-v3";
+const CACHE_NAME = "sgo-cache-v4";
 
 // Só cacheia o CSS no install — robusto, sem risco de falhar por ícone ausente
 const ASSETS_CORE = ["/static/style.css"];

@@ -1,0 +1,26 @@
+#!/bin/sh
+# Auto-bump da versão de cache do Service Worker (CACHE_NAME)
+# Roda sozinho a cada "git commit" quando arquivos estáticos mudam.
+
+SW_FILE="static/service-worker.js"
+ARQUIVOS_ALTERADOS=$(git diff --cached --name-only)
+
+# Só bumpa se algo relevante mudou (CSS, JS, templates) e o próprio
+# service-worker.js NÃO foi editado manualmente nesse commit
+if echo "$ARQUIVOS_ALTERADOS" | grep -qE '^(static/style\.css|templates/.*\.html|static/.*\.js)$' \
+   && ! echo "$ARQUIVOS_ALTERADOS" | grep -q "^$SW_FILE$"; then
+
+  if [ -f "$SW_FILE" ]; then
+    VERSAO_ATUAL=$(grep -oE 'sgo-cache-v[0-9]+' "$SW_FILE" | grep -oE '[0-9]+' | head -1)
+
+    if [ -n "$VERSAO_ATUAL" ]; then
+      PROXIMA_VERSAO=$((VERSAO_ATUAL + 1))
+      sed -i.bak "s/sgo-cache-v[0-9]\+/sgo-cache-v$PROXIMA_VERSAO/" "$SW_FILE"
+      rm -f "$SW_FILE.bak"
+      git add "$SW_FILE"
+      echo "🔄 Cache do Service Worker atualizado automaticamente: v$PROXIMA_VERSAO"
+    fi
+  fi
+fi
+
+exit 0

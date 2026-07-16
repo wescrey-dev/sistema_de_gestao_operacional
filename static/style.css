@@ -1669,6 +1669,24 @@ textarea {
   background: rgba(37, 99, 235, 0.08);
 }
 
+.status-pendente {
+  color: var(--accent-2);
+  border-color: rgba(233, 162, 59, 0.3);
+  background: rgba(233, 162, 59, 0.12);
+}
+
+.status-aprovado {
+  color: var(--success);
+  border-color: rgba(31, 157, 108, 0.25);
+  background: rgba(31, 157, 108, 0.1);
+}
+
+.status-reprovado {
+  color: var(--danger);
+  border-color: rgba(214, 69, 69, 0.25);
+  background: rgba(214, 69, 69, 0.1);
+}
+
 .status-inline {
   min-width: 64px;
 }

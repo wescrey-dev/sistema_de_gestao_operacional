@@ -10,7 +10,7 @@ block content %}
         <span class="pill">Checklist</span>
         <strong>{{ execucao.modelo.nome }}</strong>
       </div>
-      <span class="pill">{{ execucao.status_execucao }}</span>
+      <span class="pill {% if execucao.status_execucao == 'Aprovado' %}pill-success{% elif execucao.status_execucao == 'Reprovado' %}pill-danger{% else %}pill-warning{% endif %}">{{ execucao.status_execucao }}</span>
     </div>
 
     <div class="record-details">

@@ -1102,7 +1102,7 @@ def checklist_preencher(modelo_id):
         execucao = ChecklistExecucao(
             checklist_modelo_id=modelo.id,
             usuario_id=session.get("usuario_id"),
-            status_execucao="concluido"
+            status_execucao="Pendente"
         )
 
         for campo in campos_cabecalho:
@@ -1151,7 +1151,7 @@ def checklist_preencher(modelo_id):
         db.session.add(execucao)
         db.session.commit()
 
-        flash("Checklist salvo com sucesso.", "success")
+        flash("Checklist enviado para aprovação do supervisor.", "success")
         return redirect(url_for("checklist_historico"))
 
     return render_template(
@@ -1456,17 +1456,66 @@ def checklist_execucao_detalhe(execucao_id):
         total_resolvidos=total_resolvidos
     )
 
+
+@app.route("/checklists/historico/<int:execucao_id>/aprovar", methods=["POST"])
+@perfil_required("admin", "supervisor")
+def checklist_aprovar(execucao_id):
+    execucao = ChecklistExecucao.query.get_or_404(execucao_id)
+
+    if execucao.status_execucao != "Pendente":
+        flash("Este checklist já foi analisado.", "warning")
+        return redirect(url_for("checklist_execucao_detalhe", execucao_id=execucao.id))
+
+    execucao.status_execucao = "Aprovado"
+    execucao.aprovado_por_id = session.get("usuario_id")
+    execucao.aprovado_em = datetime.utcnow()
+    execucao.observacao_supervisor = ""
+
+    db.session.commit()
+    flash("Checklist aprovado com sucesso.", "success")
+    return redirect(url_for("checklist_execucao_detalhe", execucao_id=execucao.id))
+
+
+@app.route("/checklists/historico/<int:execucao_id>/reprovar", methods=["POST"])
+@perfil_required("admin", "supervisor")
+def checklist_reprovar(execucao_id):
+    execucao = ChecklistExecucao.query.get_or_404(execucao_id)
+
+    if execucao.status_execucao != "Pendente":
+        flash("Este checklist já foi analisado.", "warning")
+        return redirect(url_for("checklist_execucao_detalhe", execucao_id=execucao.id))
+
+    observacao = request.form.get("observacao_supervisor", "").strip()
+    if not observacao:
+        flash("Informe o motivo da reprovação antes de continuar.", "danger")
+        return redirect(url_for("checklist_execucao_detalhe", execucao_id=execucao.id))
+
+    execucao.status_execucao = "Reprovado"
+    execucao.aprovado_por_id = session.get("usuario_id")
+    execucao.aprovado_em = datetime.utcnow()
+    execucao.observacao_supervisor = observacao
+
+    db.session.commit()
+    flash("Checklist reprovado. O colaborador poderá ver o motivo no histórico.", "success")
+    return redirect(url_for("checklist_execucao_detalhe", execucao_id=execucao.id))
+
+
 class ChecklistExecucao(db.Model):
     __tablename__ = "checklist_execucoes"
 
     id = db.Column(db.Integer, primary_key=True)
     checklist_modelo_id = db.Column(db.Integer, db.ForeignKey("checklist_modelos.id"), nullable=False)
     usuario_id = db.Column(db.Integer, db.ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True)
-    status_execucao = db.Column(db.String(50), nullable=False, default="concluido")
+    status_execucao = db.Column(db.String(50), nullable=False, default="Pendente")
     criado_em = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+    aprovado_por_id = db.Column(db.Integer, db.ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True)
+    aprovado_em = db.Column(db.DateTime, nullable=True)
+    observacao_supervisor = db.Column(db.Text, nullable=True)
 
     modelo = db.relationship("ChecklistModelo", foreign_keys=[checklist_modelo_id])
     usuario = db.relationship("Usuario", foreign_keys=[usuario_id])
+    aprovado_por = db.relationship("Usuario", foreign_keys=[aprovado_por_id])
 
     cabecalhos = db.relationship(
         "ChecklistExecucaoCabecalho",

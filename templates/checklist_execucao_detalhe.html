@@ -54,6 +54,56 @@ block content %}
     </div>
   </article>
 
+  {% if execucao.status_execucao == "Pendente" and session.get("usuario_perfil") in ["admin", "supervisor"] %}
+  <article class="card detail-card">
+    <h3 class="section-title">Análise do supervisor</h3>
+    <p class="muted">Revise as informações preenchidas acima e confirme se o checklist está em conformidade.</p>
+
+    <div class="cta-group" style="margin-top: 14px;">
+      <form method="POST" action="{{ url_for('checklist_aprovar', execucao_id=execucao.id) }}" style="margin: 0;">
+        <button type="submit" class="button" onclick="return confirm('Confirma a aprovação deste checklist?');">
+          ✔ Aprovar checklist
+        </button>
+      </form>
+    </div>
+
+    <form method="POST" action="{{ url_for('checklist_reprovar', execucao_id=execucao.id) }}" style="margin-top: 14px;">
+      <label class="field-label" for="observacao_supervisor">Motivo da reprovação (obrigatório para reprovar)</label>
+      <textarea
+        id="observacao_supervisor"
+        name="observacao_supervisor"
+        rows="3"
+        placeholder="Explique o que está incorreto ou incompleto neste checklist..."
+        style="width: 100%; margin-top: 6px;"
+      ></textarea>
+      <button type="submit" class="button button-danger" style="margin-top: 10px;" onclick="return confirm('Confirma a reprovação deste checklist?');">
+        ✕ Reprovar checklist
+      </button>
+    </form>
+  </article>
+  {% elif execucao.status_execucao == "Aprovado" %}
+  <article class="card detail-card">
+    <h3 class="section-title">Análise do supervisor</h3>
+    <p class="pill pill-success">Aprovado</p>
+    <p class="muted">
+      Aprovado por {{ execucao.aprovado_por.nome if execucao.aprovado_por else "supervisor" }}
+      em {{ execucao.aprovado_em.strftime("%d/%m/%Y %H:%M:%S") if execucao.aprovado_em else "-" }}.
+    </p>
+  </article>
+  {% elif execucao.status_execucao == "Reprovado" %}
+  <article class="card detail-card">
+    <h3 class="section-title">Análise do supervisor</h3>
+    <p class="pill pill-danger">Reprovado</p>
+    <p class="muted">
+      Reprovado por {{ execucao.aprovado_por.nome if execucao.aprovado_por else "supervisor" }}
+      em {{ execucao.aprovado_em.strftime("%d/%m/%Y %H:%M:%S") if execucao.aprovado_em else "-" }}.
+    </p>
+    {% if execucao.observacao_supervisor %}
+    <p><strong>Motivo:</strong> {{ execucao.observacao_supervisor }}</p>
+    {% endif %}
+  </article>
+  {% endif %}
+
   <article class="card detail-card">
     <h3 class="section-title">Informações da execução</h3>
 

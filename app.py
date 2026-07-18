@@ -1099,6 +1099,11 @@ def checklist_preencher(modelo_id):
                 }
 
     if request.method == "POST":
+        for campo in campos_cabecalho:
+            if campo.obrigatorio and not request.form.get(campo.nome_campo, "").strip():
+                flash(f"O campo \"{campo.label_campo}\" é obrigatório.", "danger")
+                return redirect(request.url)
+
         execucao = ChecklistExecucao(
             checklist_modelo_id=modelo.id,
             usuario_id=session.get("usuario_id"),
@@ -1391,6 +1396,10 @@ def admin_duplicar_checklist_modelo(modelo_id):
 @app.route("/checklists/historico")
 @login_required
 def checklist_historico():
+    data_inicio = request.args.get("data_inicio", "").strip()
+    data_fim = request.args.get("data_fim", "").strip()
+    turno_filtro = request.args.get("turno", "").strip()
+
     execucoes = ChecklistExecucao.query.order_by(ChecklistExecucao.criado_em.desc()).all()
 
     def valor_cabecalho(execucao, nome_campo):
@@ -1399,10 +1408,20 @@ def checklist_historico():
                 return campo.valor_texto
         return ""
 
+    if data_inicio:
+        execucoes = [e for e in execucoes if valor_cabecalho(e, "data_execucao") and valor_cabecalho(e, "data_execucao") >= data_inicio]
+    if data_fim:
+        execucoes = [e for e in execucoes if valor_cabecalho(e, "data_execucao") and valor_cabecalho(e, "data_execucao") <= data_fim]
+    if turno_filtro:
+        execucoes = [e for e in execucoes if valor_cabecalho(e, "turno") == turno_filtro]
+
     return render_template(
         "checklist_historico.html",
         execucoes=execucoes,
-        valor_cabecalho=valor_cabecalho
+        valor_cabecalho=valor_cabecalho,
+        data_inicio=data_inicio,
+        data_fim=data_fim,
+        turno_filtro=turno_filtro
     )
 
     

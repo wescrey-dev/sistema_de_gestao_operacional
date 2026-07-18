@@ -2,6 +2,36 @@
 {% block page_title %}Histórico de checklists{% endblock %} {% block
 page_description %}Checklists preenchidos e salvos no sistema.{% endblock %} {%
 block content %}
+
+<section class="card filters-card" style="margin-bottom: 20px;">
+  <form method="GET" action="{{ url_for('checklist_historico') }}" class="filters-form">
+    <div class="filters-grid">
+      <label>
+        Data inicial
+        <input type="date" name="data_inicio" value="{{ data_inicio }}">
+      </label>
+      <label>
+        Data final
+        <input type="date" name="data_fim" value="{{ data_fim }}">
+      </label>
+      <label>
+        Turno
+        <select name="turno">
+          <option value="" {% if not turno_filtro %}selected{% endif %}>Todos</option>
+          <option value="Turno D1" {% if turno_filtro == "Turno D1" %}selected{% endif %}>Turno D1</option>
+          <option value="Turno D2" {% if turno_filtro == "Turno D2" %}selected{% endif %}>Turno D2</option>
+          <option value="Turno N1" {% if turno_filtro == "Turno N1" %}selected{% endif %}>Turno N1</option>
+          <option value="Turno N2" {% if turno_filtro == "Turno N2" %}selected{% endif %}>Turno N2</option>
+        </select>
+      </label>
+    </div>
+    <div class="filters-actions">
+      <button type="submit" class="button">Aplicar filtro</button>
+      <a class="button button-secondary" href="{{ url_for('checklist_historico') }}">Limpar</a>
+    </div>
+  </form>
+</section>
+
 <section class="record-grid">
   {% for execucao in execucoes %}
   <article class="card record-card">
@@ -18,6 +48,9 @@ block content %}
       <p>
         <strong>Data do checklist:</strong> {{ valor_cabecalho(execucao,
         'data_execucao') or '-' }}
+      </p>
+      <p>
+        <strong>Turno:</strong> {{ valor_cabecalho(execucao, 'turno') or '-' }}
       </p>
       <p>
         <strong>Área/local:</strong> {{ valor_cabecalho(execucao, 'area_local')
@@ -45,7 +78,13 @@ block content %}
     </div>
   </article>
   {% else %}
-  <p class="muted">Nenhum checklist salvo ainda.</p>
+  <p class="muted">
+    {% if data_inicio or data_fim or turno_filtro %}
+    Nenhum checklist encontrado para esse filtro.
+    {% else %}
+    Nenhum checklist salvo ainda.
+    {% endif %}
+  </p>
   {% endfor %}
 </section>
 {% endblock %}

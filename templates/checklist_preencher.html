@@ -64,6 +64,15 @@
         {% elif campo.tipo_campo == "texto_longo" %}
         <textarea name="{{ campo.nome_campo }}" rows="3" {% if campo.obrigatorio %}required{% endif %}></textarea>
 
+        {% elif campo.tipo_campo == "selecao_turno" %}
+        <select name="{{ campo.nome_campo }}" {% if campo.obrigatorio %}required{% endif %}>
+          <option value="" disabled selected>Selecione o turno...</option>
+          <option value="Turno D1">Turno D1</option>
+          <option value="Turno D2">Turno D2</option>
+          <option value="Turno N1">Turno N1</option>
+          <option value="Turno N2">Turno N2</option>
+        </select>
+
         {% else %}
         <input type="text" name="{{ campo.nome_campo }}" {% if campo.obrigatorio %}required{% endif %}>
         {% endif %}
